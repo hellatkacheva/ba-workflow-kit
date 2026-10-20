@@ -1,0 +1,11 @@
+{
+  "name": "ba-workflow-kit",
+  "version": "0.1.0",
+  "description": "BA workflow kit: from a Confluence requirements page to traced requirements, decisions, backlog, spec, PoC and Jira — with BA decision points and change-impact sync.",
+  "author": {
+    "name": "Olga Tkacheva"
+  },
+  "repository": "https://github.com/hellatkacheva/ba-workflow-kit",
+  "license": "UNLICENSED",
+  "keywords": ["business-analysis", "requirements", "confluence", "jira", "traceability"]
+}

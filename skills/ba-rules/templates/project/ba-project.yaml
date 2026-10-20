@@ -1,0 +1,80 @@
+# BA workflow kit — project settings. Created by /ba-new, see docs/design.md §3 of the kit.
+# Fields marked (BA) are changed only by the BA or on the BA's explicit OK.
+kit_version: "0.1.0"
+
+project:
+  name: "{{PROJECT_NAME}}"            # (BA)
+  deadline: null                      # (BA) YYYY-MM-DD
+
+people:
+  ba: "{{BA_NAME}}"                   # (BA)
+  sponsor: null                       # (BA) filled after step "requirements"
+
+decisions:
+  proxy_for_sponsor: true             # (BA) "Decided by: <ba> (BA, proxy for <sponsor>)"
+  max_ab: 2                           # (BA) max conflicts with outcome "Prototype both (A/B)"
+
+language:
+  artifacts: en
+  chat: ru
+
+atlassian:
+  site: "{{SITE}}"                    # e.g. example.atlassian.net
+  cloud_id: "{{CLOUD_ID}}"
+  mcp_server: "{{MCP_SERVER}}"        # name in .mcp.json → tools mcp__<name>__*
+
+source:
+  space_key: "{{SPACE_KEY}}"
+  page_id: "{{PAGE_ID}}"
+  title: "{{PAGE_TITLE}}"
+  include_children: true              # (BA)
+  include_attachments: true           # (BA) attachments are listed, files are put into docs/00-source/inbox/ by the BA
+  version: null                       # set by ingest / sync
+  snapshot_at: null                   # version.createdAt of the snapshot
+  children: []                        # [{id, title, version}]
+  attachments: []                     # [{id, title, version, media_type}] — filled by the watch Action / REST
+
+steps:                                # status: not_started | draft | reviewed | approved | stale | skipped
+  ingest:       { status: not_started, source_version: null, updated: null }
+  requirements: { status: not_started, source_version: null, updated: null }
+  conflicts:    { status: not_started, source_version: null, updated: null }
+  stories:      { status: not_started, source_version: null, updated: null }
+  review:       { status: not_started, source_version: null, updated: null }
+  spec:         { status: not_started, source_version: null, updated: null }
+  build:        { status: not_started, source_version: null, updated: null }
+  deploy:       { status: not_started, source_version: null, updated: null }
+  jira:         { status: not_started, source_version: null, updated: null }
+
+approvals: []                         # [{step, status, by, date, note}] — only on the BA's explicit OK
+
+jira:
+  project_key: "{{JIRA_KEY}}"
+  style: "{{JIRA_STYLE}}"             # team-managed | company-managed
+  issue_types:                        # always by ID — names may be localized
+    epic: "{{ISSUE_TYPE_EPIC}}"
+    story: "{{ISSUE_TYPE_STORY}}"
+    task: "{{ISSUE_TYPE_TASK}}"
+  statuses:                           # filled by jira-sync on first run (needs an issue to read transitions)
+    todo: null
+    in_progress: null
+    done: null
+  priority_on_create: {{PRIORITY_ON_CREATE}}
+  priority_map: { Must: High, Should: Medium, Could: Low }
+  labels:
+    project: "{{JIRA_LABEL}}"
+
+repo:
+  url: "{{REPO_URL}}"
+  branch: main
+  visibility: "{{REPO_VISIBILITY}}"   # static profile on a free GitHub account needs public
+
+stack:
+  deploy:
+    profile: static                   # (BA) static (default) | local | cloudflare | none — kit design §3.1
+    url: null                         # set by deploy
+    prod_requires_ok: true            # cannot be disabled
+  constraints: []                     # derived from the profile + project DECs by the spec step
+
+watch:
+  enabled: false                      # (BA) daily GitHub Action → issue "run /ba-sync"
+  issue_label: ba-sync

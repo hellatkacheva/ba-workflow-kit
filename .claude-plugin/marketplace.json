@@ -1,0 +1,14 @@
+{
+  "name": "ba-workflow-kit",
+  "description": "Local marketplace for testing the BA workflow kit.",
+  "owner": {
+    "name": "Olga Tkacheva"
+  },
+  "plugins": [
+    {
+      "name": "ba-workflow-kit",
+      "source": "./",
+      "description": "BA workflow kit: Confluence page → requirements → decisions → backlog → spec → PoC → Jira, with change-impact sync."
+    }
+  ]
+}

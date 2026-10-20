@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "mcp__{{MCP_SERVER}}__createConfluencePage",
+      "mcp__{{MCP_SERVER}}__updateConfluencePage",
+      "mcp__{{MCP_SERVER}}__createConfluenceFooterComment",
+      "mcp__{{MCP_SERVER}}__createConfluenceInlineComment",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.dev.vars)"
+    ],
+    "ask": [
+      "mcp__{{MCP_SERVER}}__createJiraIssue",
+      "mcp__{{MCP_SERVER}}__editJiraIssue",
+      "mcp__{{MCP_SERVER}}__transitionJiraIssue",
+      "Bash(git push:*)",
+      "Bash(npx wrangler deploy:*)",
+      "Bash(gh secret:*)"
+    ]
+  }
+}

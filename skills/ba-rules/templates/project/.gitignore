@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.*
+*.pem
+.dev.vars
+
+# Claude Code personal settings
+.claude/settings.local.json
+
+# build / tooling
+node_modules/
+.wrangler/
+dist/
+*.sqlite
+app/test-results/
+app/playwright-report/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
