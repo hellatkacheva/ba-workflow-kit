@@ -9,7 +9,7 @@ You are a senior business analyst writing a backlog a developer can build from w
 
 ## Gate
 - `steps.conflicts.status` is `reviewed` or `approved`, **and** no conflict in `analysis-log.md` is `Open`. Otherwise stop and tell the BA which conflicts are open.
-- If `backlog.md` exists and is `Reviewed`/`Approved`, do not regenerate it: changes now go through `review-backlog` or `/ba-sync`.
+- If `backlog.md` exists: `Draft` with a `review.md` → do not regenerate (changes go through `review-backlog`); `Reviewed`/`Approved` → changes go through `/ba-sync`.
 
 ## Inputs
 `docs/01-requirements/requirements.md`, `docs/02-analysis/analysis-log.md`, `docs/00-source/README.md` (source keys), `ba-project.yaml` (`project.deadline`, `stack.deploy.profile`, `decisions.max_ab`).
@@ -56,4 +56,4 @@ Collect `OQ-n` in backlog §7. When done, show them to the BA one by one with op
 ## Finish
 1. `ba-project.yaml`: `steps.stories = {status: draft, source_version: <source.version>, updated: <today>}`.
 2. Append to `docs/run-log.md`: epics, stories by priority and cut-line band, coverage gaps, OQ count and how many the BA answered.
-3. Reply in the chat language: counts, coverage gaps, stories `Ready: No`, the decision point "BA review → reviewed", next step `review-backlog`, proposed commit `step 4: backlog v1`.
+3. Reply in the chat language: counts, coverage gaps, stories `Ready: No`, proposed commit `step 4: backlog v1`. The backlog stays `Draft`: next is `review-backlog` — the independent critic reviews the draft, the BA decides on the findings, and only then the backlog becomes `Reviewed` (as in the reference project). Do not ask the BA to mark the backlog reviewed now.

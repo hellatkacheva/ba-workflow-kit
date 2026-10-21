@@ -50,8 +50,8 @@ Every conflict (`CON`) ends in exactly one outcome, chosen by the BA:
 | `ingest` | `ingest-confluence` | `docs/00-source/` | — (BA reads the report) |
 | `requirements` | `requirements` | `docs/01-requirements/requirements.md` | BA review → `reviewed` |
 | `conflicts` | `analyze-conflicts` | `docs/02-analysis/analysis-log.md` | BA decides each CON and GAP |
-| `stories` | `write-stories` | `docs/03-backlog/` | BA review |
-| `review` | `review-backlog` | `docs/03-backlog/review.md` | BA accepts / rejects findings |
+| `stories` | `write-stories` | `docs/03-backlog/` | BA answers open questions (OQ); backlog stays `draft` until the review step |
+| `review` | `review-backlog` | `docs/03-backlog/review.md` | BA accepts / rejects findings, then backlog → `reviewed` |
 | `spec` | `spec` | `docs/04-spec/` | BA + tech review; architect rule (§7) |
 | `build` | `build` | `app/` | BA checks each story |
 | `deploy` | `deploy` | public URL | explicit OK for public deploy |
@@ -59,7 +59,7 @@ Every conflict (`CON`) ends in exactly one outcome, chosen by the BA:
 
 Step status values: `not_started` · `draft` · `reviewed` · `approved` · `stale` · `skipped`.
 
-- A step may start only if the previous step is `reviewed` or `approved` (`ingest` has no gate). Otherwise stop and tell the BA.
+- A step may start only if the previous step is `reviewed` or `approved`. Exceptions: `ingest` has no gate; `requirements` needs `ingest` ≥ `draft`; `review` needs `stories` ≥ `draft` (the critic reviews the draft backlog, as in the reference project). Otherwise stop and tell the BA.
 - A skill sets its own step to `draft` when it writes output. Only the BA's explicit words ("OK", "reviewed", "approve") move a step to `reviewed` / `approved`; then append to `approvals` (`{step, status, by, date, note}`).
 - Requirement row statuses: `Confirmed` · `Proposed` · `Derived — needs BA confirmation` · `Superseded by …`. An unconfirmed `Derived` row is not agreed: later steps do not build stories on it and list it as a question for the BA.
 

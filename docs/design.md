@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Reviewed |
 | **Reviewed by** | Olga, 2026-10-20 |
-| **Version** | v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
+| **Version** | v1.5 · 2026-10-21 (решения BA по итерации 2a: гейт ревью как в DeskShare, проверка git status после критика — §12.2); v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
 | **Author** | Olga Tkacheva (BA) + Claude |
 | **Reference project** | `C:\Projects\deskshare\deskshare` (read-only, commit `215a051`) |
 | **Test source** | Confluence `hellatkacheva.atlassian.net` · space `DSSRC` · page `65670` (v2) — тесты A/B; page `294916` (v1, GearLoan) — тест C |
@@ -44,7 +44,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|---|---|---|
 | `/ba-new` | `<confluence-url>` `[--jira KEY]` | Проверяет MCP и авторизацию, по URL находит cloudId и page id, создаёт `ba-project.yaml` и скелет `docs/`. Читает типы задач и статусы Jira-проекта по ID. Запускает шаг 1 (ingest). | `ba-project.yaml`, `CLAUDE.md`, `docs/00-source/**`, `.github/workflows/confluence-watch.yml` | Подтверждение BA: проект/пространство/страница/Jira key/стек — перед записью yaml |
 | `/ba-status` | — | Только чтение: таблица шагов (статус, утверждение, дата), версия источника — локальная и в Confluence, открытые CON/GAP, stale-артефакты, открытые CHG. | ничего | — |
-| `/ba-continue` | `[step]` | Берёт первый шаг, у которого `status ≠ approved/reviewed` и предыдущий шаг ≥ `reviewed`, и запускает его skill. Идёт **до ближайшей HITL-точки** (решение BA, Q7): шаги без HITL выполняются подряд, на HITL — стоп (для build — после каждой истории). | через skill шага | На каждой HITL-точке (§7). Не переходит к следующему шагу, пока BA не перевёл текущий в `reviewed` |
+| `/ba-continue` | `[step]` | Берёт первый шаг, у которого `status ≠ approved/reviewed` и предыдущий шаг ≥ `reviewed`, и запускает его skill. Идёт **до ближайшей HITL-точки** (решение BA, Q7): шаги без HITL выполняются подряд, на HITL — стоп (для build — после каждой истории). | через skill шага | На каждой HITL-точке (§7). Не переходит к следующему шагу, пока BA не перевёл текущий в `reviewed` (исключения: ingest → requirements; stories → review, §12.2 B-1) |
 | `/ba-sync` | `[--version N]` | Подтягивает текущую версию страницы, сравнивает со снимком, запускает skill `change-impact`, показывает CHG-отчёт; после OK переделывает только затронутое. | `docs/00-source/confluence/**`, `docs/07-changes/CHG-xxx.md`, затронутые артефакты | После отчёта CHG (OK на план переделки); далее — HITL-точки каждого перезапускаемого шага |
 
 ### 1.3 Skills
@@ -57,8 +57,8 @@ MCP-сервер **не** входит в плагин: он настраива�
 | `ingest` | 1 | `/ingest` | URL / page id из yaml; `docs/00-source/inbox/` (ручные файлы) | `docs/00-source/confluence/<page>/v<N>/…`, `docs/00-source/NN-*.md`, README | Нет (BA только смотрит отчёт) |
 | `extract-requirements` | 2 | `/extract-requirements` | `docs/00-source/*.md` | `docs/01-requirements/requirements.md` | BA review → `reviewed` |
 | `analyze-conflicts` | 3 | `/analyze-conflicts` | requirements (≥ reviewed), sources | `docs/02-analysis/analysis-log.md`, + REQ `Proposed` | **BA решает каждый CON и GAP** |
-| `write-stories` | 4 | `/write-stories` | requirements, analysis-log (0 `Open` CON) | `docs/03-backlog/backlog.md`, `stories/US-xxx.md` | BA review |
-| `review-backlog` | 5 | `/review-backlog` | backlog | `docs/03-backlog/review.md`, правки историй | **BA принимает/отклоняет замечания** |
+| `write-stories` | 4 | `/write-stories` | requirements, analysis-log (0 `Open` CON) | `docs/03-backlog/backlog.md`, `stories/US-xxx.md` (`Draft`) | BA отвечает на OQ; review бэклога — после критика (шаг 5) |
+| `review-backlog` | 5 | `/review-backlog` | backlog в статусе `Draft` | `docs/03-backlog/review.md`, правки историй | **BA принимает/отклоняет замечания**, затем backlog → `reviewed` |
 | `spec` | 6 | `/spec` | backlog (≥ reviewed), requirements, analysis-log, `stack` из yaml | `docs/04-spec/*.md` | BA + tech review; вопросы → стоп; **правило архитектора (§3.2) → CON и стоп** |
 | `build` | 7 | `/build` | spec (≥ reviewed), история | `app/`, `build-status.md`, `test-plan.md` | BA проверяет каждую историю |
 | `deploy` | 8 | `/deploy` | `app/`, `stack.deploy.profile` (§3.1) | URL, smoke-тест, `build-status.md` | **Явное OK на публичную выкладку**; секреты вводит только BA |
@@ -69,7 +69,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 | Агент | Роль | Инструменты | Вход | Выход | Кто вызывает |
 |---|---|---|---|---|---|
-| `backlog-reviewer` | Скептичный QA lead / senior BA, который не писал этот бэклог (как в DeskShare) | Read, Grep, Glob, Write (только `review.md`) | `CLAUDE.md`, `docs/00-source/`, requirements, analysis-log, backlog | `docs/03-backlog/review.md`: таблица # · severity · файл · finding · evidence · fix + вердикт | `review-backlog` |
+| `backlog-reviewer` | Скептичный QA lead / senior BA, который не писал этот бэклог (как в DeskShare) | Read, Grep, Glob, Write (только `review.md`) | `CLAUDE.md`, `docs/00-source/`, requirements, analysis-log, backlog | `docs/03-backlog/review.md`: таблица # · severity · файл · finding · evidence · fix + вердикт | `review-backlog`; после работы агента `review-backlog` проверяет `git status`: изменён только `review.md`, иначе стоп и сообщение BA (§12.2) |
 | `impact-analyst` | Независимый аналитик изменений: классифицирует diff и прослеживает влияние, ничего не правит | Read, Grep, Glob, Write (только `docs/07-changes/`) | diff снимков (`changes.json`), `trace-index.json`, артефакты шагов 2–9 | Черновик `CHG-xxx.md` (§5.4) | `change-impact` |
 | `trace-auditor` | Проверяет трассировку: каждая цитата есть в текущем снимке, у каждого REQ есть источник, у каждой истории — REQ/DEC, у каждого AC — тест | Read, Grep, Glob, Write (только `docs/.ba/trace-index.json`, `trace-audit.md`) | `docs/00-source/`, docs 01–05 | `trace-index.json` (§5.2), список нарушений | конец шагов 2–5, начало `/ba-sync`, `/ba-status` |
 
@@ -327,8 +327,8 @@ MCP-сервер **не** входит в плагин: он настраива�
 | H0 | `/ba-new` | Страница, Jira-проект, стек, включить ли watch | `ba-project.yaml` + `approvals` |
 | H1 | после шага 2 | Requirements → `reviewed` | `approvals`, header артефакта |
 | H2 | шаг 3, Part B | Каждый CON: опция + исход (a/b/c); каждый GAP | `DEC-xxx` с `Decided by`, датой |
-| H3 | после шага 4 | Backlog → `reviewed`; ответы на OQ | `approvals` |
-| H4 | шаг 5 | Какие замечания критика принять | `review.md`: `Rejected by BA — …` |
+| H3 | шаг 4 | Ответы на OQ (backlog остаётся `Draft` — его ревьюит критик на шаге 5, как в DeskShare) | `DEC` в `analysis-log.md` |
+| H4 | шаг 5 | Какие замечания критика принять; после разбора — backlog → `reviewed` | `review.md`: `BA outcome`, `Rejected by BA — …`; `approvals` (`stories`, `review`) |
 | H5 | шаг 6 | Вопросы по spec, tech review | DEC, `approvals` |
 | H5a | шаг 6 / `/ba-sync` | **Правило архитектора** (§3.2): общие данные против профиля `static`/`local` — сменить профиль, сузить требование или отложить | `CON-xxx` → `DEC-xxx`; `stack.deploy.profile` |
 | H6 | шаг 7 | Каждая история после build; любая неоднозначность → стоп | `build-status.md` |
@@ -358,6 +358,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|---|
 | Инструкции | `ba-rules` + шаги skills | — |
 | Права | `settings.json` шаблона: `deny` для `mcp__*__deleteJira*` (если появится), `mcp__<mcp_server>__updateConfluencePage` / `createConfluencePage` (кит в Confluence не пишет вообще — правила прав не фильтруют по space), `wrangler deploy --env production` → `ask` | — |
+| Проверка после субагента | `review-backlog`: чистое дерево до критика, после — `git status --porcelain` содержит только `docs/03-backlog/review.md`, иначе стоп (§12.2) | — |
 | Hook | — | PreToolUse-guard: блок записи в `docs/00-source/confluence/**` и вызовов Jira вне project key |
 
 ---
@@ -446,5 +447,14 @@ MCP-сервер **не** входит в плагин: он настраива�
 | I2a-1 | **Правило архитектора срабатывает уже в `analyze-conflicts`** (Part A, CON с тегом `Architect rule`, решается в Part B вместе с остальными CON). `spec` перепроверяет и поднимает новый CON только для потребностей в общих данных, не покрытых DEC | §3.2: только `spec` и `change-impact` | Задание на итерацию 2a. Решение о профиле нужно до историй: иначе `write-stories` пишет истории под профиль, который потом сменится |
 | I2a-2 | Каждое наблюдение §8 из requirements обязано попасть в CON / GAP / SI / RSK / ASM или в список «Observations not carried forward» с причиной | — | Трассировка K-4 → шаг 3 |
 | I2a-3 | Шаги 3 и 5 возобновляемые: `/ba-continue` на `draft` с открытыми CON/GAP (шаг 3) или с находками без решения BA (шаг 5) продолжает решения с первого открытого пункта | K-2: `draft` = ждёт review | HITL-решения в этих шагах длинные, BA может прерваться |
-| I2a-4 | Гейт шага 5: backlog `reviewed` (H3), как в §7.1; в DeskShare review шёл на `Draft`-бэклоге | DeskShare | Следуем HITL-таблице кита |
+| I2a-4 | ~~Гейт шага 5: backlog `reviewed` (H3)~~ — **заменено решением BA §12.2 (B-1)**: критик ревьюит `Draft`-бэклог, как в DeskShare | DeskShare | — |
 | I2a-5 | `backlog-reviewer` дополнительно проверяет соответствие историй профилю деплоя и DEC правила архитектора (несоответствие — Blocker, `BA decision`) и полноту A/B-групп | DeskShare: 8 проверок | Профиль деплоя в ките — переменная, а не данность |
+
+### 12.2 Решения BA по итерации 2a (2026-10-21)
+
+| # | Решение BA | Что изменено | Затронутые файлы / разделы |
+|---|---|---|---|
+| B-1 | **Гейт ревью — как в DeskShare.** `backlog-reviewer` ревьюит бэклог в статусе `Draft`; BA разбирает замечания и только потом переводит бэклог в `Reviewed`. Заменяет I2a-4 | Гейт `review`: `stories` ≥ `draft` (исключение в `ba-rules` §4). `write-stories` оставляет бэклог `Draft` и не просит review. `/ba-continue`: `stories` в `draft` → шаг `review`; после ответов на OQ шаг 4 переходит в шаг 5 в том же запуске. По «reviewed» BA после разбора замечаний: `backlog.md` и `review.md` → `Reviewed`, `steps.stories` и `steps.review` → `reviewed`, две строки в `approvals`. H3 — только ответы на OQ, H4 — замечания + перевод бэклога в `reviewed` | §1.3, §7.1 (H3, H4), `ba-rules` §4, `write-stories`, `review-backlog`, `/ba-continue` |
+| B-2 | **Минимум инструментов у критика + проверка `git status`.** У `backlog-reviewer` только Read, Grep, Glob, Write | `review-backlog`: до вызова агента дерево должно быть чистым (иначе предложить коммит `step 4: backlog v1` и ждать); после — `git status --porcelain` содержит только `docs/03-backlog/review.md`, иначе стоп, список путей BA, отчёт не используется, ничего не откатывается без BA | §1.4, §7.3, `review-backlog`, `agents/backlog-reviewer.md` |
+| B-3 | Принято: каждое наблюдение §8 из requirements попадает в CON / GAP / SI / RSK / ASM или в «Observations not carried forward» с причиной | без изменений (I2a-2) | `analyze-conflicts` |
+| B-4 | Принято: критик проверяет совместимость историй с профилем деплоя и DEC правила архитектора, и полноту A/B-групп | без изменений (I2a-5) | `agents/backlog-reviewer.md` |
