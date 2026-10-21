@@ -26,19 +26,34 @@ Every `docs/00-source/NN-*.md` and `docs/00-source/README.md` (source keys, know
 | 5 | Non-functional requirements | `NFR-xxx`, same columns — privacy, device/usability, maintainability/hosting, data retention, performance — only where the source says something |
 | 6 | Constraints and decisions already taken | `CST-xxx` / `DEC-xxx` · statement · who decided · when · source; show chains when a later meeting changed an earlier decision (`Superseded by …`) |
 | 7 | Explicitly out of scope | `OOS-xxx` · item · `out of scope` vs `parked / later phase` · source |
-| 8 | Observations for the next step | plain list, no IDs: contradictions, ambiguities, missing information, numbers without basis, decisions without owner, goals the constraints may not allow, **requirements that need data shared between users or devices** (input for the architect rule in `spec`). Do not resolve them. |
+| 8 | Observations for the next step | numbered list, no IDs, one bold lead per item; work through the **mandatory checklist** below. Do not resolve anything. |
 
 Row rules:
 - Reference format `[KEY · Section]` with the exact heading; quote = short verbatim fragment that can be found with a text search in the working source (same characters, including curly quotes).
-- Split compound statements into atomic rows.
+- **Atomicity: one testable rule = one REQ.** If a sentence holds two rules that could pass or fail independently (e.g. "pick a date and a floor", "refuse the booking and tell the user to pick another day"), write two rows. Test: could a tester write one pass/fail check for the row without "and"? If not, split.
+- **State effect of every action.** For each REQ that describes a user or system action (book, cancel, confirm, release, return, approve, …), write a separate REQ for its effect on the state: what changes in counters, statuses or availability (e.g. "When a booking is cancelled, the place counts as available capacity again"). If the source does not say what the effect is, do not invent one — add an observation (checklist item 3).
 - Priority: `Must` only where the item is in the agreed definition of done or explicitly decided scope; `Won't` only for explicit out-of-scope; otherwise `TBD`. State this basis in §1.
 - Status: `Confirmed` (stated or agreed in the source) · `Proposed` (wish of one stakeholder, not agreed) · `Superseded by …`.
 - Stakeholder names and roles only as written in the source. Fill `people.sponsor` in `ba-project.yaml` **only after the BA confirms** who the sponsor is.
+
+## §8 mandatory checklist
+Go through every item and record each finding as an observation. If an item has no finding, still write it as one line ("**NFR — browsers:** sources say nothing"), so the BA sees it was checked.
+
+1. **Contradictions between protocols / sources** — A says X, B says not-X; and **dangling references**: a source refers to something ("as agreed in Workshop 1", "the fire-drill use case", "the earlier ballpark") that is not in the referenced source or in any source.
+2. **Quality and completeness of received data** — documents or files mentioned but not available (attachments, spreadsheets, handoff docs); numbers whose basis is not in the sources; data from a source the stakeholders themselves call unreliable.
+3. **Data missing for a requirement** — for each REQ, what is needed to build or test it and is not stated: limits, time windows, cut-off times, formats, ownership, the state effect of an action, who may do it.
+4. **Ambiguous statuses** — items that are both "agreed" and "open", "known limitation" and "build item", decided without a named decider, or re-decided later without saying the earlier decision is replaced.
+5. **NFR categories** — one line each, with what the sources say or "sources say nothing": availability, browsers / devices, concurrent users, data migration (existing data to import or start empty), data retention, logging. Also the categories already in §5 if a target is missing (performance, privacy, accessibility).
+6. **Scope growth vs. fixed scope** — new scope added in later meetings compared with a fixed-scope, fixed-date or "nothing beyond agreed scope" statement.
+7. **Requirements that need data shared between users or devices** — input for the architect rule in `spec` (`ba-rules` §7). Name the REQ IDs.
+8. Other: goals the constraints may not allow, wording that can be read two ways.
 
 ## Quality bar (check before finishing; report failures)
 - Every row has a source key that exists and a quote that is found verbatim in that source (verify with Grep).
 - Nothing in the document is absent from the sources.
 - Every element of the definition of done maps to at least one REQ.
+- No REQ contains two independently testable rules; every action REQ has a state-effect REQ or an observation saying the effect is not stated.
+- §8 has a line for every checklist item 1–7 (NFR categories one by one).
 - No ID is reused; numbering is continuous for a new file.
 
 ## Finish

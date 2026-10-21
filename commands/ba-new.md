@@ -37,6 +37,7 @@ Templates are in the `ba-rules` skill directory under `templates/project/`. Copy
 - `CLAUDE.md` — fill the placeholders. If a `CLAUDE.md` already exists, do not overwrite: show the BA the kit section and ask where to add it.
 - `.claude/settings.json` — fill `{{MCP_SERVER}}`. If it exists, merge the `deny`/`ask` lists and show the diff.
 - `.gitignore` — create or append missing lines.
+- `.gitattributes` — create or append missing lines (snapshots under `docs/00-source/confluence/` are stored without line-ending conversion).
 - `docs/` — all READMEs, `docs/run-log.md`, `docs/00-source/inbox/.gitkeep`.
 Never copy anything else, never write outside the project directory.
 

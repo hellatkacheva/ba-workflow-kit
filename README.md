@@ -10,22 +10,24 @@ Claude Code plugin for business analysts: a Confluence requirements page → tra
 | Skill `ba-rules` + project templates (`skills/ba-rules/templates/project/`) | done |
 | Commands `/ba-new`, `/ba-status` | done |
 | Skills `ingest-confluence` (step 1), `requirements` (step 2) | done |
-| Commands `/ba-continue`, `/ba-sync` | stub (TODO) |
+| Command `/ba-continue` | minimal router: runs implemented steps (ingest, requirements) up to the next BA decision point; other steps → "iteration 2" |
+| Command `/ba-sync` | stub (TODO) |
 | Skills `analyze-conflicts`, `write-stories`, `review-backlog`, `spec`, `build`, `deploy`, `jira-sync`, `change-impact` | stub (TODO) |
 | Agents `backlog-reviewer`, `impact-analyst`, `trace-auditor` | stub (TODO) |
 | GitHub Action `confluence-watch` | not started (iteration 3) |
 
-Changes accepted after the design review (skill names, template location, Jira status IDs filled by `jira-sync`): see `docs/design.md` §11.
+Changes accepted after the design review: `docs/design.md` §11; fixes after test A step 2 (`.gitattributes`, `/ba-continue` router, requirements atomicity and §8 checklist, golden test): §12.
 
 ## Layout
 
 ```
 .claude-plugin/   plugin.json, marketplace.json (local marketplace for testing)
-commands/         ba-new, ba-status, ba-continue (stub), ba-sync (stub)
+commands/         ba-new, ba-status, ba-continue (minimal router), ba-sync (stub)
 skills/           ba-rules (+ templates/project), ingest-confluence, requirements (+ templates), stubs
 agents/           stubs
 docs/design.md    design (Reviewed)
 tests/fixtures/   test C source (GearLoan)
+tests/golden/     golden topic lists (DeskShare step 2)
 ```
 
 ## Install locally for testing
@@ -61,4 +63,4 @@ Check: `claude plugin validate C:\Projects\ba-workflow-kit`; in a session `/help
 /ba-status
 ```
 
-Then the `requirements` skill ("извлеки требования") — `/ba-continue` arrives in iteration 2.
+Then `/ba-continue` — runs `requirements` and stops for the BA review (H1). Compare the result with `tests/golden/deskshare-step2.md`.

@@ -1,0 +1,3 @@
+# Confluence snapshots are kept byte-for-byte: no line-ending conversion,
+# so /ba-sync compares exactly what the MCP returned (Windows autocrlf included).
+docs/00-source/confluence/** -text
