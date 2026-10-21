@@ -18,6 +18,8 @@
 
 **MoSCoW basis.** `Must` only where the item is in the agreed definition of done or in explicitly decided scope. `Won't` only for items explicitly placed out of scope. Everything else is `TBD`.
 
+**Status values.** `Confirmed` — stated or agreed in the source · `Proposed` — one stakeholder's wish, not agreed · `Derived — needs BA confirmation` — follows from the source but is not stated; quote + `Rationale:` · `Superseded by …`.
+
 ---
 
 ## 2. Business context
@@ -37,6 +39,7 @@
 | ID | Requirement | Source | Quote | Priority | Status |
 |---|---|---|---|---|---|
 | REQ-001 | The system shall … | `[KEY · Section]` | "…" | Must / TBD | Confirmed |
+| REQ-002 | When …, the system shall … (state effect) | `[KEY · Section]` | "…" · Rationale: … | Must / TBD | Derived — needs BA confirmation |
 
 ## 5. Non-functional requirements
 

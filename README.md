@@ -2,7 +2,7 @@
 
 Claude Code plugin for business analysts: a Confluence requirements page → traced requirements → decisions → backlog → spec → PoC → Jira, with BA decision points and change-impact sync. Design: [`docs/design.md`](docs/design.md) (Reviewed).
 
-## Status — iteration 1 (v0.1.0)
+## Status — iteration 2a (v0.2.0)
 
 | Part | State |
 |---|---|
@@ -10,21 +10,24 @@ Claude Code plugin for business analysts: a Confluence requirements page → tra
 | Skill `ba-rules` + project templates (`skills/ba-rules/templates/project/`) | done |
 | Commands `/ba-new`, `/ba-status` | done |
 | Skills `ingest-confluence` (step 1), `requirements` (step 2) | done |
-| Command `/ba-continue` | minimal router: runs implemented steps (ingest, requirements) up to the next BA decision point; other steps → "iteration 2" |
+| Skills `analyze-conflicts` (step 3), `write-stories` (step 4), `review-backlog` (step 5) + agent `backlog-reviewer` | done (iteration 2a) |
+| Command `/ba-continue` | router: runs implemented steps (1–5) up to the next BA decision point, resumes open decisions of steps 3 and 5; steps 6–9 → "iteration 2b" |
 | Command `/ba-sync` | stub (TODO) |
-| Skills `analyze-conflicts`, `write-stories`, `review-backlog`, `spec`, `build`, `deploy`, `jira-sync`, `change-impact` | stub (TODO) |
-| Agents `backlog-reviewer`, `impact-analyst`, `trace-auditor` | stub (TODO) |
+| Skills `spec`, `build`, `deploy`, `jira-sync` | stub (iteration 2b) |
+| Skill `change-impact` | stub (iteration 3) |
+| Agents `impact-analyst`, `trace-auditor` | stub (iteration 3) |
 | GitHub Action `confluence-watch` | not started (iteration 3) |
 
-Changes accepted after the design review: `docs/design.md` §11; fixes after test A step 2 (`.gitattributes`, `/ba-continue` router, requirements atomicity and §8 checklist, golden test): §12.
+Changes accepted after the design review: `docs/design.md` §11; fixes after test A (`.gitattributes`, `/ba-continue` router, requirements atomicity, §8 checklist, golden test, per-page snapshots, child-page source keys, `Derived` requirements) and iteration 2a decisions: §12.
 
 ## Layout
 
 ```
 .claude-plugin/   plugin.json, marketplace.json (local marketplace for testing)
-commands/         ba-new, ba-status, ba-continue (minimal router), ba-sync (stub)
-skills/           ba-rules (+ templates/project), ingest-confluence, requirements (+ templates), stubs
-agents/           stubs
+commands/         ba-new, ba-status, ba-continue (router, steps 1–5), ba-sync (stub)
+skills/           ba-rules (+ templates/project), ingest-confluence, requirements, analyze-conflicts,
+                  write-stories (each + templates), review-backlog, stubs (spec, build, deploy, jira-sync, change-impact)
+agents/           backlog-reviewer; stubs (impact-analyst, trace-auditor)
 docs/design.md    design (Reviewed)
 tests/fixtures/   test C source (GearLoan)
 tests/golden/     golden topic lists (DeskShare step 2)
@@ -63,4 +66,4 @@ Check: `claude plugin validate C:\Projects\ba-workflow-kit`; in a session `/help
 /ba-status
 ```
 
-Then `/ba-continue` — runs `requirements` and stops for the BA review (H1). Compare the result with `tests/golden/deskshare-step2.md`.
+Then `/ba-continue` — runs `requirements` and stops for the BA review (H1); compare the result with `tests/golden/deskshare-step2.md`. After each "reviewed", `/ba-continue` again: step 3 (conflicts, BA decides each CON incl. the architect rule), step 4 (stories), step 5 (independent review).

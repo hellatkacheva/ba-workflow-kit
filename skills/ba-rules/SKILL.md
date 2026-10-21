@@ -61,6 +61,7 @@ Step status values: `not_started` · `draft` · `reviewed` · `approved` · `sta
 
 - A step may start only if the previous step is `reviewed` or `approved` (`ingest` has no gate). Otherwise stop and tell the BA.
 - A skill sets its own step to `draft` when it writes output. Only the BA's explicit words ("OK", "reviewed", "approve") move a step to `reviewed` / `approved`; then append to `approvals` (`{step, status, by, date, note}`).
+- Requirement row statuses: `Confirmed` · `Proposed` · `Derived — needs BA confirmation` · `Superseded by …`. An unconfirmed `Derived` row is not agreed: later steps do not build stories on it and list it as a question for the BA.
 
 ## 5. ba-project.yaml protocol
 
@@ -82,7 +83,7 @@ Step status values: `not_started` · `draft` · `reviewed` · `approved` · `sta
 | Rewrite artifacts in `/ba-sync` before the BA's OK on the CHG plan | Only snapshot + CHG report |
 | `git push --force`, rewrite history, push without the BA asking | Commit after each step; push on request |
 
-## 7. Architect rule (used by `spec` and `change-impact`)
+## 7. Architect rule (used by `analyze-conflicts`, `spec` and `change-impact`)
 
 If `stack.deploy.profile` is `static` (no shared data — browser `localStorage`) or `local` (Node + SQLite on one laptop, shared only within that laptop / Wi-Fi) **and** any REQ/NFR/DEC needs state shared between devices or users (a shared limit or capacity, one resource lent/booked to one person, a shared stock or log, one role confirming another user's action, history/audit over time, seeing other users' actions), then:
 
@@ -91,6 +92,8 @@ If `stack.deploy.profile` is `static` (no shared data — browser `localStorage`
 3. **Stop.** Do not write the spec until the BA picks an outcome; record it as `DEC-xxx`.
 
 Never silently narrow the requirement, silently switch profile, or add a third-party shared store without a DEC.
+
+Where it runs: `analyze-conflicts` raises it first (Part A, candidate `CON` tagged `Architect rule`) and the BA decides it in Part B with the other conflicts. `spec` re-checks before writing and raises a new `CON` only for shared-data needs not covered by an existing architect-rule `DEC` (for example, requirements added after step 3). `change-impact` re-checks on C2/C3/C4 changes.
 
 ## 8. Language, git, run log
 

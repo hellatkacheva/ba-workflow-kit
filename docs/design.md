@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Reviewed |
 | **Reviewed by** | Olga, 2026-10-20 |
-| **Version** | v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
+| **Version** | v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
 | **Author** | Olga Tkacheva (BA) + Claude |
 | **Reference project** | `C:\Projects\deskshare\deskshare` (read-only, commit `215a051`) |
 | **Test source** | Confluence `hellatkacheva.atlassian.net` · space `DSSRC` · page `65670` (v2) — тесты A/B; page `294916` (v1, GearLoan) — тест C |
@@ -184,7 +184,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 | | |
 |---|---|
-| **Когда срабатывает** | Skill `spec` перед записью spec, а также `change-impact` при C2/C3/C4. Проверка: `stack.deploy.profile ∈ {static, local}` **и** есть хотя бы один REQ/NFR/DEC, который требует общего состояния между устройствами или пользователями. Для `static` общих данных нет вообще; для `local` они есть только в пределах ноутбука/Wi-Fi — CON описывает именно эту границу (удалённые и гибридные пользователи, публичный URL) |
+| **Когда срабатывает** | Впервые — skill `analyze-conflicts` (шаг 3, Part A: кандидат в CON, решается в Part B вместе с остальными, §12.1); повторно — `spec` перед записью spec (только для потребностей, не покрытых DEC) и `change-impact` при C2/C3/C4. Проверка: `stack.deploy.profile ∈ {static, local}` **и** есть хотя бы один REQ/NFR/DEC, который требует общего состояния между устройствами или пользователями. Для `static` общих данных нет вообще; для `local` они есть только в пределах ноутбука/Wi-Fi — CON описывает именно эту границу (удалённые и гибридные пользователи, публичный URL) |
 | **Признаки «нужны общие данные»** | Лимит или ёмкость на всех (capacity, «не больше N»); общая бронь или выдача одного ресурса («кто взял», «свободно ли»); общий склад или журнал; роль, подтверждающая действие другого пользователя («только Ken отмечает возврат»); история или аудит за период; видимость чужих действий в реальном времени |
 | **Что делает Claude** | 1) Создаёт `CON-xxx` в `analysis-log.md`: позиция A — требование (цитата, источник), позиция B — профиль деплоя (`ba-project.yaml`, DEC выбора профиля, ограничения стейкхолдеров вроде «no servers»). 2) Даёт 2–3 опции с плюсами и минусами (см. ниже) и `Claude's recommendation`. 3) **Останавливается**: spec не пишется, пока BA не выберет исход по decision rules (a/b/c). |
 | **Типовые опции** | Всегда сравниваются три профиля — `static` / `local` / `cloudflare` — с плюсами, минусами и `Claude's recommendation`: (1) `cloudflare` — общие данные везде, но нужен облачный аккаунт и секреты; (2) `local` — общие данные в одной комнате/Wi-Fi, без облака; (3) `static` с явно суженным требованием для PoC: «демо на одном устройстве, общие данные имитируются seed-данными», баннер в UI, `ASM` — `ASSUMPTION — not validated`. Дополнительно возможен исход (c) Deferred — sponsor decision |
@@ -204,7 +204,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | Страница | `getConfluencePage` | `pageId`, `contentFormat: html` | `page.html` (round-trip-формат, нужен для точного diff) |
 | Страница (для анализа) | `getConfluencePage` | `contentFormat: markdown` | `page.md` |
 | Метаданные | ответ `getConfluencePage` | — | `version.number`, `version.createdAt`, `version.message`, `title`, `spaceId`, `parentId` → `meta.json` |
-| Дочерние страницы | `getConfluencePageDescendants` | `pageId` | для каждой: `getConfluencePage` → `children/<id>/page.{html,md}` |
+| Дочерние страницы | `getConfluencePageDescendants` | `pageId` | для каждой: `getConfluencePage` → своя папка `confluence/<childId>/v<M>/page.{html,md}` (K-7) |
 | Вложения | **в списке инструментов MCP нет** (на 2026-10-20 у `atlassian-olga` 32 инструмента, ни одного для вложений) | — | см. §4.3 |
 
 ### 4.2 Снимок
@@ -213,8 +213,8 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|---|
 | `docs/00-source/confluence/<pageId>/v<N>/page.html` | Тело страницы как есть | Никогда (append-only) |
 | `docs/00-source/confluence/<pageId>/v<N>/page.md` | Markdown из MCP | Никогда |
-| `docs/00-source/confluence/<pageId>/v<N>/meta.json` | id, title, version, createdAt, version message, автор, список детей и вложений с версиями, sha256 тела | Никогда |
-| `docs/00-source/confluence/<pageId>/v<N>/children/<id>/…` | То же для детей | Никогда |
+| `docs/00-source/confluence/<pageId>/v<N>/meta.json` | id, title, version, createdAt, version message, автор, sha256 тела; у главной страницы — список детей (id, версия) на момент снимка | Никогда |
+| `docs/00-source/confluence/<childId>/v<M>/…` | То же для каждой дочерней страницы — своя папка и своя версия (K-7), не внутри папки родителя | Никогда |
 | `docs/00-source/confluence/<pageId>/v<N>/attachments/<file>` | Файлы вложений (если получены) | Никогда |
 | `docs/00-source/NN-<short-name>.md` | Рабочий источник для шагов 2+: verbatim, правятся только переносы и списки (правило DeskShare `/ingest`), заголовок `Source: Confluence <pageId> v<N>` | Пересоздаётся при `/ba-sync` после OK |
 | `docs/00-source/README.md` | Таблица источников + **Source keys** (`HO`, `CTX`, `W1`… выводятся из заголовков H2) + Known missing inputs | При ingest / sync |
@@ -423,7 +423,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 ## 12. Changes after test A
 
-Принято BA 2026-10-21 по итогам теста A, шаг 2 (`requirements` на `65670` v2). Версия документа v1.3, статус остаётся Reviewed.
+Принято BA 2026-10-21. K-1…K-6 — по итогам теста A, шаг 2 (`requirements` на `65670` v2), версия v1.3. K-7…K-9 — по итогам повторного прогона теста A (golden: 27/27 Must), версия v1.4. Статус документа остаётся Reviewed.
 
 | # | Что найдено в тесте | Изменение в ките | Затронутые файлы / разделы |
 |---|---|---|---|
@@ -433,3 +433,18 @@ MCP-сервер **не** входит в плагин: он настраива�
 | K-4 | §8 «Наблюдения» беднее, чем в DeskShare: не было противоречий между протоколами, качества данных, NFR-пробелов, роста scope | Обязательный чек-лист §8: противоречия и ссылки на то, чего нет в другом протоколе; качество и полнота присланных данных; данные, которых не хватает для требования; двойственные статусы; NFR-категории (доступность, браузеры, одновременные пользователи, миграция, хранение, логи); рост scope против fixed scope; общие данные (вход правила архитектора). Пункт без находки всё равно пишется одной строкой | `skills/requirements/SKILL.md` (§8 checklist), `templates/requirements.md` §8 |
 | K-5 | Сравнение с DeskShare делалось на глаз | Golden-тест `tests/golden/deskshare-step2.md`: темы слоя шага 2 DeskShare (commit `e8f3d88`: REQ-001…014, NFR-001…009, наблюдения O-01…O-16) с весом Must/Should. В плане тестов (§8 A): после `requirements` сравнить покрытие, критерий — все темы `Must` покрыты | `tests/golden/deskshare-step2.md`, §8 |
 | K-6 | В Confluence не было workshop brief (`BR`) — REQ/CST из брифа (сроки, Cloudflare, «one screen») выпадали | Создана дочерняя страница `458755` «Workshop brief (source copy)» у `65670` в DSSRC — дословно `docs/00-source/01-workshop-brief.md` DeskShare. Тест A берёт её через `include child pages` | Confluence DSSRC, §8 A «Известное отличие» |
+| K-7 | Снимки дочерних страниц лежали внутри папки родителя (`v<N>/children/`): новая версия ребёнка (напр. бриф `458755`) потребовала бы менять неизменяемый снимок родителя или делать новую версию родителя без изменений в нём | Отдельная папка на каждую страницу: `confluence/<pageId>/v<N>/` — и для главной, и для каждой дочерней, у каждой своя версия. Снимок родителя не меняется, когда меняется только ребёнок. В `meta.json` родителя — список дочерних `{id, title, version}` на момент снимка; текущий список — `source.children` | `skills/ingest-confluence/SKILL.md` §1–2, §4.1–4.2 |
+| K-8 | Ключ на каждый H2 дробил дочернюю страницу на много ключей (в DeskShare бриф — один ключ: `[BR · Stakeholders]`); unescape `\~` давал цитаты, которых нет в `page.md` | Дочерняя страница получает **один ключ на всю страницу** (по названию, напр. `BR`); раздел — её заголовок H2: `[BR · <H2>]`. Главная страница — как раньше: ключ на H2. Unescape `\~` (и других `\`-артефактов) **не делаем** — рабочий источник совпадает с `page.md` символ в символ | `skills/ingest-confluence/SKILL.md` §3 |
+| K-9 | Выведенные требования (эффекты на состояние, следствия из definition of done) — не прямая цитата, но по статусу не отличались от `Confirmed` | Статус **`Derived — needs BA confirmation`**: в колонке Quote — исходные дословные фрагменты + `Rationale:`. Подтверждает только BA в review → `Confirmed (derived, BA <date>)`, отклонённые → `Removed in BA review` (ID не переиспользуется). Неподтверждённый `Derived` не идёт в истории и попадает в GAP шага 3. Если источник ничего не подразумевает — это наблюдение, не `Derived` | `skills/requirements/SKILL.md`, `templates/requirements.md`, `skills/ba-rules/SKILL.md` §4 |
+
+### 12.1 Итерация 2a — шаги 3–5
+
+Реализованы skills `analyze-conflicts`, `write-stories`, `review-backlog` и агент `backlog-reviewer` — порт DeskShare `.claude/commands/{analyze-conflicts,write-stories,review-backlog}.md` и `.claude/agents/backlog-reviewer.md` без специфики проекта (имена, Jira, Cloudflare, даты — из `ba-project.yaml`). `/ba-continue` маршрутизирует на них; `spec`, `build`, `deploy`, `jira-sync` — «итерация 2b».
+
+| # | Решение при реализации | Было | Причина |
+|---|---|---|---|
+| I2a-1 | **Правило архитектора срабатывает уже в `analyze-conflicts`** (Part A, CON с тегом `Architect rule`, решается в Part B вместе с остальными CON). `spec` перепроверяет и поднимает новый CON только для потребностей в общих данных, не покрытых DEC | §3.2: только `spec` и `change-impact` | Задание на итерацию 2a. Решение о профиле нужно до историй: иначе `write-stories` пишет истории под профиль, который потом сменится |
+| I2a-2 | Каждое наблюдение §8 из requirements обязано попасть в CON / GAP / SI / RSK / ASM или в список «Observations not carried forward» с причиной | — | Трассировка K-4 → шаг 3 |
+| I2a-3 | Шаги 3 и 5 возобновляемые: `/ba-continue` на `draft` с открытыми CON/GAP (шаг 3) или с находками без решения BA (шаг 5) продолжает решения с первого открытого пункта | K-2: `draft` = ждёт review | HITL-решения в этих шагах длинные, BA может прерваться |
+| I2a-4 | Гейт шага 5: backlog `reviewed` (H3), как в §7.1; в DeskShare review шёл на `Draft`-бэклоге | DeskShare | Следуем HITL-таблице кита |
+| I2a-5 | `backlog-reviewer` дополнительно проверяет соответствие историй профилю деплоя и DEC правила архитектора (несоответствие — Blocker, `BA decision`) и полноту A/B-групп | DeskShare: 8 проверок | Профиль деплоя в ките — переменная, а не данность |

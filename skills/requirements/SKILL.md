@@ -31,9 +31,10 @@ Every `docs/00-source/NN-*.md` and `docs/00-source/README.md` (source keys, know
 Row rules:
 - Reference format `[KEY · Section]` with the exact heading; quote = short verbatim fragment that can be found with a text search in the working source (same characters, including curly quotes).
 - **Atomicity: one testable rule = one REQ.** If a sentence holds two rules that could pass or fail independently (e.g. "pick a date and a floor", "refuse the booking and tell the user to pick another day"), write two rows. Test: could a tester write one pass/fail check for the row without "and"? If not, split.
-- **State effect of every action.** For each REQ that describes a user or system action (book, cancel, confirm, release, return, approve, …), write a separate REQ for its effect on the state: what changes in counters, statuses or availability (e.g. "When a booking is cancelled, the place counts as available capacity again"). If the source does not say what the effect is, do not invent one — add an observation (checklist item 3).
+- **State effect of every action.** For each REQ that describes a user or system action (book, cancel, confirm, release, return, approve, …), write a separate REQ for its effect on the state: what changes in counters, statuses or availability (e.g. "When a booking is cancelled, the place counts as available capacity again"). If the source states the effect, the row is `Confirmed`; if it only implies it, the row is `Derived` (below); if it says nothing, do not invent one — add an observation (checklist item 3).
 - Priority: `Must` only where the item is in the agreed definition of done or explicitly decided scope; `Won't` only for explicit out-of-scope; otherwise `TBD`. State this basis in §1.
-- Status: `Confirmed` (stated or agreed in the source) · `Proposed` (wish of one stakeholder, not agreed) · `Superseded by …`.
+- Status: `Confirmed` (stated or agreed in the source) · `Proposed` (wish of one stakeholder, not agreed) · `Derived` (see below) · `Superseded by …`.
+- **Derived requirements.** A row that is not a direct statement of the source but follows from it (e.g. a state effect implied by "forget to release a booking", a rule implied by the definition of done) has status `Derived — needs BA confirmation`. Its Quote column holds the verbatim fragments it is derived from, followed by `Rationale: <one sentence: why this follows>`. Do not use `Derived` to fill gaps: if the sources do not imply the rule, it is an observation (checklist item 3), not a row. Only the BA's explicit confirmation in review changes the status to `Confirmed (derived, BA <date>)`; rejected rows become `Removed in BA review <date>` (ID not reused). Later steps treat an unconfirmed `Derived` row as not agreed.
 - Stakeholder names and roles only as written in the source. Fill `people.sponsor` in `ba-project.yaml` **only after the BA confirms** who the sponsor is.
 
 ## §8 mandatory checklist
@@ -49,7 +50,7 @@ Go through every item and record each finding as an observation. If an item has 
 8. Other: goals the constraints may not allow, wording that can be read two ways.
 
 ## Quality bar (check before finishing; report failures)
-- Every row has a source key that exists and a quote that is found verbatim in that source (verify with Grep).
+- Every row has a source key that exists and a quote that is found verbatim in that source (verify with Grep); for `Derived` rows every quoted fragment is found and a `Rationale:` is present.
 - Nothing in the document is absent from the sources.
 - Every element of the definition of done maps to at least one REQ.
 - No REQ contains two independently testable rules; every action REQ has a state-effect REQ or an observation saying the effect is not stated.
@@ -59,4 +60,4 @@ Go through every item and record each finding as an observation. If an item has 
 ## Finish
 1. `ba-project.yaml`: `steps.requirements = {status: draft, source_version: <source.version>, updated: <today>}`.
 2. Append to `docs/run-log.md` (counts per section).
-3. Reply in the chat language: counts per section, the 5 items the BA should check first, observations count, the decision point "BA review → reviewed", proposed commit `step 2: extract requirements v1`.
+3. Reply in the chat language: counts per section, the list of `Derived` rows (ID · one line) for the BA to confirm or reject, the 5 items the BA should check first, observations count, the decision point "BA review → reviewed", proposed commit `step 2: extract requirements v1`.

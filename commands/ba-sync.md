@@ -5,7 +5,7 @@ argument-hint: [--version N]
 
 Load the `ba-rules` skill first.
 
-**Not implemented yet (kit iteration 1).** Tell the BA in Russian that `/ba-sync` is a stub, and stop. Do not fetch, snapshot or change anything.
+**Not implemented yet (until kit iteration 3).** Tell the BA in Russian that `/ba-sync` is a stub, and stop. Do not fetch, snapshot or change anything.
 
 TODO (kit design §5):
 - Fetch the current page version; if newer than `source.version`, snapshot it with `ingest-confluence` (snapshot only, no working-source regeneration yet).
