@@ -12,6 +12,7 @@ node_modules/
 .wrangler/
 dist/
 *.sqlite
+app/data/
 app/test-results/
 app/playwright-report/
 

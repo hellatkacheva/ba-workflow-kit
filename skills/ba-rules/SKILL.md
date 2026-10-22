@@ -52,14 +52,14 @@ Every conflict (`CON`) ends in exactly one outcome, chosen by the BA:
 | `conflicts` | `analyze-conflicts` | `docs/02-analysis/analysis-log.md` | BA decides each CON and GAP |
 | `stories` | `write-stories` | `docs/03-backlog/` | BA answers open questions (OQ); backlog stays `draft` until the review step |
 | `review` | `review-backlog` | `docs/03-backlog/review.md` | BA accepts / rejects findings, then backlog → `reviewed` |
-| `spec` | `spec` | `docs/04-spec/` | BA + tech review; architect rule (§7) |
-| `build` | `build` | `app/` | BA checks each story |
-| `deploy` | `deploy` | public URL | explicit OK for public deploy |
-| `jira` | `jira-sync` | Jira + `docs/05-jira/jira-map.md` | OK on the plan before any write |
+| `spec` | `spec` | `docs/04-spec/` | spec questions (OQ-S); architect-rule re-check (§7); BA + tech review → `reviewed` |
+| `build` | `build` | `app/`, `docs/04-spec/build-status.md` | BA accepts each story; all wanted stories accepted → `reviewed` |
+| `deploy` | `deploy` | URL (or local run instructions), smoke test | explicit OK for every public deploy in the current conversation |
+| `jira` | `jira-sync` | Jira + `docs/05-jira/jira-map.md` | OK on the plan before any write; sprint created by the BA |
 
 Step status values: `not_started` · `draft` · `reviewed` · `approved` · `stale` · `skipped`.
 
-- A step may start only if the previous step is `reviewed` or `approved`. Exceptions: `ingest` has no gate; `requirements` needs `ingest` ≥ `draft`; `review` needs `stories` ≥ `draft` (the critic reviews the draft backlog, as in the reference project). Otherwise stop and tell the BA.
+- A step may start only if the previous step is `reviewed` or `approved`. Exceptions: `ingest` has no gate; `requirements` needs `ingest` ≥ `draft`; `review` needs `stories` ≥ `draft` (the critic reviews the draft backlog, as in the reference project); `deploy` needs `spec` ≥ `reviewed` and every Core demo story accepted by the BA (later stories are redeployed one by one); `jira` needs `review` ≥ `reviewed` only. Profile `none`: `spec`, `build`, `deploy` → `skipped` on the BA's OK. Otherwise stop and tell the BA.
 - A skill sets its own step to `draft` when it writes output. Only the BA's explicit words ("OK", "reviewed", "approve") move a step to `reviewed` / `approved`; then append to `approvals` (`{step, status, by, date, note}`).
 - Requirement row statuses: `Confirmed` · `Proposed` · `Derived — needs BA confirmation` · `Superseded by …`. An unconfirmed `Derived` row is not agreed: later steps do not build stories on it and list it as a question for the BA.
 
@@ -67,7 +67,7 @@ Step status values: `not_started` · `draft` · `reviewed` · `approved` · `sta
 
 - Read it at the start of every command and skill. If it is missing, say so in the chat language and suggest `/ba-new <confluence-url>`.
 - MCP tools are called as `mcp__<atlassian.mcp_server>__<tool>` with `cloudId: <atlassian.cloud_id>`.
-- Update only the fields your step owns (`steps.<key>.*`, `source.*` for ingest). Never change `approvals`, `people`, `decisions`, `stack.deploy.profile` without the BA's explicit OK in the current conversation.
+- Update only the fields your step owns (`steps.<key>.*`; `source.*` for ingest; `stack.constraints` for spec; `stack.deploy.url` for deploy; `jira.statuses` for jira-sync). Never change `approvals`, `people`, `decisions`, `stack.deploy.profile` without the BA's explicit OK in the current conversation.
 - Keep comments and field order when editing; edit in place, do not regenerate the file.
 
 ## 6. Actions Claude never takes on its own

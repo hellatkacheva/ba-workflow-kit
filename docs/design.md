@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Reviewed |
 | **Reviewed by** | Olga, 2026-10-20 |
-| **Version** | v1.5 · 2026-10-21 (решения BA по итерации 2a: гейт ревью как в DeskShare, проверка git status после критика — §12.2); v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
+| **Version** | v1.6 · 2026-10-22 (тест A шаги 3–5: K-10, K-11; итерация 2b — spec, build, deploy, jira-sync — §12.3); v1.5 · 2026-10-21 (решения BA по итерации 2a: гейт ревью как в DeskShare, проверка git status после критика — §12.2); v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
 | **Author** | Olga Tkacheva (BA) + Claude |
 | **Reference project** | `C:\Projects\deskshare\deskshare` (read-only, commit `215a051`) |
 | **Test source** | Confluence `hellatkacheva.atlassian.net` · space `DSSRC` · page `65670` (v2) — тесты A/B; page `294916` (v1, GearLoan) — тест C |
@@ -44,7 +44,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|---|---|---|
 | `/ba-new` | `<confluence-url>` `[--jira KEY]` | Проверяет MCP и авторизацию, по URL находит cloudId и page id, создаёт `ba-project.yaml` и скелет `docs/`. Читает типы задач и статусы Jira-проекта по ID. Запускает шаг 1 (ingest). | `ba-project.yaml`, `CLAUDE.md`, `docs/00-source/**`, `.github/workflows/confluence-watch.yml` | Подтверждение BA: проект/пространство/страница/Jira key/стек — перед записью yaml |
 | `/ba-status` | — | Только чтение: таблица шагов (статус, утверждение, дата), версия источника — локальная и в Confluence, открытые CON/GAP, stale-артефакты, открытые CHG. | ничего | — |
-| `/ba-continue` | `[step]` | Берёт первый шаг, у которого `status ≠ approved/reviewed` и предыдущий шаг ≥ `reviewed`, и запускает его skill. Идёт **до ближайшей HITL-точки** (решение BA, Q7): шаги без HITL выполняются подряд, на HITL — стоп (для build — после каждой истории). | через skill шага | На каждой HITL-точке (§7). Не переходит к следующему шагу, пока BA не перевёл текущий в `reviewed` (исключения: ingest → requirements; stories → review, §12.2 B-1) |
+| `/ba-continue` | `[step]` | Берёт первый шаг, у которого `status ≠ approved/reviewed` и предыдущий шаг ≥ `reviewed`, и запускает его skill. Идёт **до ближайшей HITL-точки** (решение BA, Q7): шаги без HITL выполняются подряд, на HITL — стоп (для build — после каждой истории). | через skill шага | На каждой HITL-точке (§7). Не переходит к следующему шагу, пока BA не перевёл текущий в `reviewed` (исключения: ingest → requirements; stories → review, §12.2 B-1; deploy — после spec `reviewed` и принятых BA историй Core demo; jira — после review `reviewed`, §12.3) |
 | `/ba-sync` | `[--version N]` | Подтягивает текущую версию страницы, сравнивает со снимком, запускает skill `change-impact`, показывает CHG-отчёт; после OK переделывает только затронутое. | `docs/00-source/confluence/**`, `docs/07-changes/CHG-xxx.md`, затронутые артефакты | После отчёта CHG (OK на план переделки); далее — HITL-точки каждого перезапускаемого шага |
 
 ### 1.3 Skills
@@ -59,10 +59,10 @@ MCP-сервер **не** входит в плагин: он настраива�
 | `analyze-conflicts` | 3 | `/analyze-conflicts` | requirements (≥ reviewed), sources | `docs/02-analysis/analysis-log.md`, + REQ `Proposed` | **BA решает каждый CON и GAP** |
 | `write-stories` | 4 | `/write-stories` | requirements, analysis-log (0 `Open` CON) | `docs/03-backlog/backlog.md`, `stories/US-xxx.md` (`Draft`) | BA отвечает на OQ; review бэклога — после критика (шаг 5) |
 | `review-backlog` | 5 | `/review-backlog` | backlog в статусе `Draft` | `docs/03-backlog/review.md`, правки историй | **BA принимает/отклоняет замечания**, затем backlog → `reviewed` |
-| `spec` | 6 | `/spec` | backlog (≥ reviewed), requirements, analysis-log, `stack` из yaml | `docs/04-spec/*.md` | BA + tech review; вопросы → стоп; **правило архитектора (§3.2) → CON и стоп** |
-| `build` | 7 | `/build` | spec (≥ reviewed), история | `app/`, `build-status.md`, `test-plan.md` | BA проверяет каждую историю |
-| `deploy` | 8 | `/deploy` | `app/`, `stack.deploy.profile` (§3.1) | URL, smoke-тест, `build-status.md` | **Явное OK на публичную выкладку**; секреты вводит только BA |
-| `jira-sync` | 9 | `/jira-sync` | backlog (≥ reviewed), analysis-log §open questions, build-status, `jira` из yaml | Jira-задачи, `docs/05-jira/jira-map.md` | **OK на план перед любой записью** |
+| `spec` | 6 | `/spec` | backlog (≥ reviewed), requirements, analysis-log, `stack` из yaml | `docs/04-spec/*.md` (architecture, data-model, api или storage для `static`, ui, config, test-plan, demo-data), `stack.constraints` | BA + tech review; вопросы OQ-S → стоп; **правило архитектора (§3.2): новый CON только для потребностей, не покрытых DEC шага 3 → стоп** |
+| `build` | 7 | `/build` | spec (≥ reviewed), история | `app/` (стек по профилю, §12.3), `build-status.md`, `test-plan.md` | BA принимает каждую историю; следующая — только после принятия |
+| `deploy` | 8 | `/deploy` | `app/`, `stack.deploy.profile` (§3.1) | `static` → GitHub Pages (`templates/pages.yml`); `local` → инструкция запуска; `cloudflare` → Worker + D1; smoke-тест, `build-status.md`, `stack.deploy.url` | **Явное OK на каждую публичную выкладку в текущем разговоре**; секреты и логины вводит только BA |
+| `jira-sync` | 9 | `/jira-sync` | backlog (≥ reviewed), analysis-log §open questions, build-status, `jira` и `atlassian` из yaml | Jira-задачи, `docs/05-jira/jira-map.md`, `jira.statuses` | **OK на план перед любой записью**; спринт создаёт BA вручную |
 | `change-impact` | sync | новое | старый и новый снимок, trace-index, все артефакты | `docs/07-changes/CHG-xxx.md`, затем scoped-перезапуск шагов | **OK на план переделки** |
 
 ### 1.4 Agents
@@ -161,6 +161,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | `jira.priority_on_create` | bool | проверяется | `/ba-new` | Priority через edit |
 | `jira.priority_map` | map | `{Must: High, Should: Medium, Could: Low}` | BA | |
 | `jira.labels.project` | str | `deskshare-kit-test` | BA | Лейбл на всех задачах, область поиска |
+| `jira.labels.moscow` | map | `{Must: must-have, Should: should-have, Could: could-have}` | BA | Метка MoSCoW на истории (§12.3) |
 | `repo.url` / `repo.branch` | str | `https://github.com/hellatkacheva/deskshare-kit-test` (public) / `main` | `/ba-new` | Ссылки из Jira на файлы; GitHub Pages |
 | `repo.visibility` | enum | `public` | `/ba-new` | `static` на GitHub Pages бесплатного аккаунта требует public |
 | `stack.deploy.profile` | enum | `static` (default) · `local` · `cloudflare` · `none` | BA | §3.1; spec / build / deploy |
@@ -173,7 +174,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 | Профиль | Что получается | Общие данные между устройствами/пользователями | Хранение | Выкладка (шаг 8) | Секреты | Когда выбирать |
 |---|---|---|---|---|---|---|
-| `static` **(default)** | Статический сайт (HTML/CSS/JS) | **Нет** — у каждого браузера свои данные | `localStorage` в браузере | GitHub Pages из `repo` (public); Action `pages` из ветки/папки | Нет | Кликабельный PoC «показать идею», один демонстратор |
+| `static` **(default)** | Статический сайт (HTML/CSS/JS) | **Нет** — у каждого браузера свои данные | `localStorage` в браузере | GitHub Pages из `repo` (public); Actions-workflow `pages.yml` публикует `app/public/` (§12.3 I2b-5) | Нет | Кликабельный PoC «показать идею», один демонстратор |
 | `local` | Node-сервер + SQLite на ноутбуке BA / разработчика | **Да, но только в пределах ноутбука / его Wi-Fi** (другие устройства открывают `http://<ip-ноутбука>:<port>`) | SQLite-файл на ноутбуке | Нет публичного URL; `npm start` + инструкция в README (как открыть с телефона в той же сети) | Нет | Демо в одной комнате с несколькими устройствами, без облака |
 | `cloudflare` | Worker + D1 (+ static assets), как в DeskShare | **Да** | D1 | `wrangler deploy` в prod-env; БД и миграции | Да — вводит только BA (`wrangler login`, `wrangler secret put`) | Нужны общие данные и публичный URL |
 | `none` | Только документы и Jira, без кода | — | — | Шаги 7–8 пропускаются, статус `skipped` | Нет | Чистый BA-анализ |
@@ -326,14 +327,14 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|---|---|
 | H0 | `/ba-new` | Страница, Jira-проект, стек, включить ли watch | `ba-project.yaml` + `approvals` |
 | H1 | после шага 2 | Requirements → `reviewed` | `approvals`, header артефакта |
-| H2 | шаг 3, Part B | Каждый CON: опция + исход (a/b/c); каждый GAP | `DEC-xxx` с `Decided by`, датой |
+| H2 | шаг 3, Part B | Сначала сводная таблица CON/GAP/ASM/RSK (K-10), затем каждый CON: опция + исход (a/b/c); каждый GAP | `DEC-xxx` с `Decided by`, датой |
 | H3 | шаг 4 | Ответы на OQ (backlog остаётся `Draft` — его ревьюит критик на шаге 5, как в DeskShare) | `DEC` в `analysis-log.md` |
 | H4 | шаг 5 | Какие замечания критика принять; после разбора — backlog → `reviewed` | `review.md`: `BA outcome`, `Rejected by BA — …`; `approvals` (`stories`, `review`) |
-| H5 | шаг 6 | Вопросы по spec, tech review | DEC, `approvals` |
+| H5 | шаг 6 | Вопросы по spec (`OQ-Sn`) по одному, tech review | DEC, `approvals` |
 | H5a | шаг 6 / `/ba-sync` | **Правило архитектора** (§3.2): общие данные против профиля `static`/`local` — сменить профиль, сузить требование или отложить | `CON-xxx` → `DEC-xxx`; `stack.deploy.profile` |
-| H6 | шаг 7 | Каждая история после build; любая неоднозначность → стоп | `build-status.md` |
+| H6 | шаг 7 | Каждая история после build (принять / вернуть); любая неоднозначность → стоп (`B-n`, при trade-off — DEC) | `build-status.md` (колонка BA) |
 | H7 | шаг 8 | **Публичная выкладка** (GitHub Pages для `static`, prod-env для `cloudflare`) — отдельное «OK, выкладываем» в этом же разговоре; ввод секретов | `run-log`, `approvals` |
-| H8 | шаг 9 | План Jira (таблица) до любой записи | `jira-map.md`, `approvals` |
+| H8 | шаг 9 | План Jira (таблица) до любой записи; спринт — вручную в UI Jira | `jira-map.md`, `approvals` |
 | H9 | `/ba-sync` | Классы изменений и план переделки построчно | CHG `Approved by` |
 | H10 | `/ba-sync` → C4 | Каждый новый CON из-за изменения источника | как H2 |
 
@@ -357,7 +358,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | Уровень | v1 | v2 |
 |---|---|---|
 | Инструкции | `ba-rules` + шаги skills | — |
-| Права | `settings.json` шаблона: `deny` для `mcp__*__deleteJira*` (если появится), `mcp__<mcp_server>__updateConfluencePage` / `createConfluencePage` (кит в Confluence не пишет вообще — правила прав не фильтруют по space), `wrangler deploy --env production` → `ask` | — |
+| Права | `settings.json` шаблона: `deny` для `mcp__*__deleteJira*` (если появится), `mcp__<mcp_server>__updateConfluencePage` / `createConfluencePage` (кит в Confluence не пишет вообще — правила прав не фильтруют по space), `wrangler deploy`, `wrangler d1 migrations apply`, `gh api`, `gh workflow run`, `git push` → `ask` | — |
 | Проверка после субагента | `review-backlog`: чистое дерево до критика, после — `git status --porcelain` содержит только `docs/03-backlog/review.md`, иначе стоп (§12.2) | — |
 | Hook | — | PreToolUse-guard: блок записи в `docs/00-source/confluence/**` и вызовов Jira вне project key |
 
@@ -424,7 +425,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 ## 12. Changes after test A
 
-Принято BA 2026-10-21. K-1…K-6 — по итогам теста A, шаг 2 (`requirements` на `65670` v2), версия v1.3. K-7…K-9 — по итогам повторного прогона теста A (golden: 27/27 Must), версия v1.4. Статус документа остаётся Reviewed.
+Принято BA 2026-10-21 и 2026-10-22. K-1…K-6 — по итогам теста A, шаг 2 (`requirements` на `65670` v2), версия v1.3. K-7…K-9 — по итогам повторного прогона теста A (golden: 27/27 Must), версия v1.4. K-10, K-11 — по итогам теста A, шаги 3–5 (отчёт `deskshare-kit-test/docs/test-reports/test-a-steps1-5.md`), версия v1.6. Статус документа остаётся Reviewed.
 
 | # | Что найдено в тесте | Изменение в ките | Затронутые файлы / разделы |
 |---|---|---|---|
@@ -437,6 +438,8 @@ MCP-сервер **не** входит в плагин: он настраива�
 | K-7 | Снимки дочерних страниц лежали внутри папки родителя (`v<N>/children/`): новая версия ребёнка (напр. бриф `458755`) потребовала бы менять неизменяемый снимок родителя или делать новую версию родителя без изменений в нём | Отдельная папка на каждую страницу: `confluence/<pageId>/v<N>/` — и для главной, и для каждой дочерней, у каждой своя версия. Снимок родителя не меняется, когда меняется только ребёнок. В `meta.json` родителя — список дочерних `{id, title, version}` на момент снимка; текущий список — `source.children` | `skills/ingest-confluence/SKILL.md` §1–2, §4.1–4.2 |
 | K-8 | Ключ на каждый H2 дробил дочернюю страницу на много ключей (в DeskShare бриф — один ключ: `[BR · Stakeholders]`); unescape `\~` давал цитаты, которых нет в `page.md` | Дочерняя страница получает **один ключ на всю страницу** (по названию, напр. `BR`); раздел — её заголовок H2: `[BR · <H2>]`. Главная страница — как раньше: ключ на H2. Unescape `\~` (и других `\`-артефактов) **не делаем** — рабочий источник совпадает с `page.md` символ в символ | `skills/ingest-confluence/SKILL.md` §3 |
 | K-9 | Выведенные требования (эффекты на состояние, следствия из definition of done) — не прямая цитата, но по статусу не отличались от `Confirmed` | Статус **`Derived — needs BA confirmation`**: в колонке Quote — исходные дословные фрагменты + `Rationale:`. Подтверждает только BA в review → `Confirmed (derived, BA <date>)`, отклонённые → `Removed in BA review` (ID не переиспользуется). Неподтверждённый `Derived` не идёт в истории и попадает в GAP шага 3. Если источник ничего не подразумевает — это наблюдение, не `Derived` | `skills/requirements/SKILL.md`, `templates/requirements.md`, `skills/ba-rules/SKILL.md` §4 |
+| K-10 | `analyze-conflicts` записал Part A и сразу задал вопрос по первому CON. BA остановил его и попросил сначала сводку: решения связаны между собой (CON-006 «стол vs этаж» поменял вариант B у CON-001, ASM зависят от CON), а без общей картины не видно пропущенных CON | Part B, шаг 0: **одна таблица** всех CON / GAP / ASM / RSK (ID · суть в одну строку · варианты · `Claude's recommendation`) + список наблюдений и противоположных позиций, которые **не** стали CON, и куда они записаны; вопрос «Начинаем решать?» (по одному или одним ответом). CON, добавленный BA по сводке, сначала дописывается в Part A. При возобновлении сводка показывается снова с отметкой решённого. Quality bar: сводка показана до первого решения | `skills/analyze-conflicts/SKILL.md` (Part B, Quality bar), §7.1 H2 |
+| K-11 | Две противоположные позиции названных людей записаны как GAP: «стол vs этаж» (Priya vs Sam) → GAP-007, «отменить *свою* бронь» без идентификации (Dana vs нет логина) → GAP-006 → ASM. В DeskShare обе — CON; в тесте A CON-006 BA поднял вручную | Правило Part A: если открытый вопрос можно ответить двумя способами, и каждый совпадает с цитируемой позицией названного стейкхолдера (или требование vs записанное решение / ограничение / OOS), — это **CON** с обеими позициями и вариантами, а не GAP и не молчаливое ASM. GAP — только недостающий факт. Quality bar: «ни один GAP / ASM не прячет две цитируемые позиции». Ожидание в повторе теста A: «стол vs этаж» и «своя бронь» выходят CON | `skills/analyze-conflicts/SKILL.md` (Part A §1, §3, Quality bar), §8 A |
 
 ### 12.1 Итерация 2a — шаги 3–5
 
@@ -458,3 +461,19 @@ MCP-сервер **не** входит в плагин: он настраива�
 | B-2 | **Минимум инструментов у критика + проверка `git status`.** У `backlog-reviewer` только Read, Grep, Glob, Write | `review-backlog`: до вызова агента дерево должно быть чистым (иначе предложить коммит `step 4: backlog v1` и ждать); после — `git status --porcelain` содержит только `docs/03-backlog/review.md`, иначе стоп, список путей BA, отчёт не используется, ничего не откатывается без BA | §1.4, §7.3, `review-backlog`, `agents/backlog-reviewer.md` |
 | B-3 | Принято: каждое наблюдение §8 из requirements попадает в CON / GAP / SI / RSK / ASM или в «Observations not carried forward» с причиной | без изменений (I2a-2) | `analyze-conflicts` |
 | B-4 | Принято: критик проверяет совместимость историй с профилем деплоя и DEC правила архитектора, и полноту A/B-групп | без изменений (I2a-5) | `agents/backlog-reviewer.md` |
+
+### 12.3 Итерация 2b — шаги 6–9 (2026-10-22)
+
+Реализованы skills `spec`, `build`, `deploy`, `jira-sync` — порт DeskShare `.claude/commands/{spec,build,deploy,jira-sync}.md` (DeskShare только читался) без специфики проекта: сайт, MCP-сервер, Jira key, ID типов, метки, профиль деплоя, репозиторий — из `ba-project.yaml`. `/ba-continue` маршрутизирует на шаги 6–9. Версия кита 0.3.0.
+
+| # | Решение | Было (DeskShare / дизайн) | Причина |
+|---|---|---|---|
+| I2b-1 | **spec**: architecture, data-model, api (`local`/`cloudflare`) или storage (`static`), ui, config, test-plan, demo-data — по таблице стека профиля. Правило архитектора перепроверяется до записи; новый CON — только для потребностей в общих данных, не покрытых DEC шага 3 (или более позднего) → стоп. Вопросы `OQ-Sn` по одному → DEC; интерпретации `I-n` — на review BA. `stack.constraints` пишет spec | DeskShare: «Fixed technical decisions» Cloudflare в тексте команды | §2.2, §3.2, I2a-1 |
+| I2b-2 | **Стек по профилю.** `static`: HTML/CSS/JS без фреймворка и сборки в `app/public/` + `localStorage` за одним модулем хранения (версионный ключ, try/catch); `local`: Node ≥ 22 (`node:http`) + SQLite через встроенный `node:sqlite`; `cloudflare`: TypeScript Worker + D1 + static assets, Vitest с `@cloudflare/vitest-plugin`, `wrangler dev --local`, как в DeskShare. Везде: один config-модуль, один clock с тестовым override, Vitest + Playwright (десктоп и 375×667) | §3.1: только названия профилей | `node:sqlite` — без нативных модулей (на Windows без build tools `better-sqlite3` не ставится); `app/public/` — то, что публикуется |
+| I2b-3 | **Тестовые хуки выключены в выложенной сборке**: `static` — только на `localhost`; `local`/`cloudflare` — переменная окружения, в проде off. Из URL выложенного приложения нельзя ничего стереть, кроме защищённого demo-reset, если он есть в истории | DeskShare: `TEST_HOOKS=off` в `env.production` | Тест A, review #10: `?reset-demo` в URL стирал демо |
+| I2b-4 | **build**: одна история за запуск, сначала тесты (должны упасть), потом минимум кода, весь набор зелёный; BA принимает каждую историю (колонка `BA` в `build-status.md`); следующая история — только после принятия или «continue». Вопросы → `B-n`, trade-off → DEC в `analysis-log.md` | DeskShare `/build` | — |
+| I2b-5 | **deploy**: `static` → GitHub Pages через Actions-workflow из шаблона `skills/deploy/templates/pages.yml` (публикует `app/public/`); `local` → инструкция запуска в `app/README.md` (как открыть с телефона в той же Wi-Fi), публичного URL нет; `cloudflare` → D1 + миграции + `wrangler deploy --env production`, как в DeskShare. После каждой выкладки — smoke-тест на результате. Каждая публичная выкладка — после явного OK BA в текущем разговоре; логины и секреты вводит BA (`! …`); если проверка прав Claude Code блокирует команду — BA запускает её сам | §3.1: «Action `pages` из ветки/папки» | Pages из ветки умеет только `/` или `/docs`, а `docs/` занят артефактами |
+| I2b-6 | **Гейт deploy**: spec `reviewed` + все истории Core demo приняты BA; build может быть ещё `draft` (дальше — передеплой по одной истории, как в DeskShare). **Гейт jira**: только review `reviewed` | §1.2: предыдущий шаг ≥ `reviewed` | DeskShare выкладывал Core demo до конца build; Jira нужна и до кода |
+| I2b-7 | **jira-sync**: MCP-сервер, cloudId, ключ, ID типов, `priority_map`, метки `jira.labels.project` и **`jira.labels.moscow`** — из yaml; план → OK BA (`approvals`) → создание без дублей (поиск JQL по метке проекта и `summary ~ "US-xxx"`; найдено — update); удаления нет, устаревшее — метка `superseded`. `jira.statuses` заполняются на первом запуске из переходов первой созданной задачи (по категории статуса). После создания одна история читается обратно — таблицы при конвертации могли потеряться. **Спринт создаёт BA в UI Jira** (у MCP нет инструментов спринта); добавить задачи в спринт правкой поля — только по просьбе BA | DeskShare: BAWT3, ID и сайт в тексте команды | §2.2, R3; DeskShare: потеря таблицы в BAWT3-8, спринт вручную |
+| I2b-8 | Профиль `none`: `spec`, `build`, `deploy` → `skipped` по OK BA; `/ba-continue` переходит к `jira` | §3.1 | — |
+| I2b-9 | Права шаблона проекта: `ask` дополнительно для `npx wrangler d1 migrations apply`, `gh api`, `gh workflow run`; `.gitignore` — `app/data/` (SQLite профиля `local`) | §7.3 | Публикующие команды проходят через подтверждение |

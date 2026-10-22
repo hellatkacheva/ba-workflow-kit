@@ -44,4 +44,4 @@ Present the findings in the chat language, grouped by severity (Blocker / Major 
 1. `ba-project.yaml`: `steps.review = {status: draft, source_version: <source.version>, updated: <today>}`.
 2. Append to `docs/run-log.md`: findings by severity, fixed / accepted / rejected / deferred, new DECs.
 3. Reply in the chat language: counts, what was changed, rejected findings with reasons, the reviewer's verdict. If no Blocker remains open, ask the BA whether the backlog is now reviewed — only the BA's words move it.
-4. **When the BA says "reviewed"**: set `backlog.md` and `review.md` headers to `Status: Reviewed (BA, <date>)`; `steps.stories.status` and `steps.review.status` → `reviewed`; append two rows to `approvals` (`stories`, `review`). Propose commit `step 5: backlog reviewed`. Next step: `spec` (iteration 2b).
+4. **When the BA says "reviewed"**: set `backlog.md` and `review.md` headers to `Status: Reviewed (BA, <date>)`; `steps.stories.status` and `steps.review.status` → `reviewed`; append two rows to `approvals` (`stories`, `review`). Propose commit `step 5: backlog reviewed`. Next step: `spec`.

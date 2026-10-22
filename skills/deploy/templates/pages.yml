@@ -1,0 +1,33 @@
+# BA kit — deploy profile `static`: publish app/public/ to GitHub Pages.
+# Copied by the `deploy` skill. Runs on push to the branch in ba-project.yaml (repo.branch) and by hand.
+name: pages
+
+on:
+  push:
+    branches: ["{{BRANCH}}"]
+    paths: ["app/public/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/public
+      - id: deployment
+        uses: actions/deploy-pages@v4

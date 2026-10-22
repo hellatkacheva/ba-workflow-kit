@@ -15,6 +15,9 @@
       "mcp__{{MCP_SERVER}}__transitionJiraIssue",
       "Bash(git push:*)",
       "Bash(npx wrangler deploy:*)",
+      "Bash(npx wrangler d1 migrations apply:*)",
+      "Bash(gh api:*)",
+      "Bash(gh workflow run:*)",
       "Bash(gh secret:*)"
     ]
   }

@@ -1,6 +1,6 @@
 # BA workflow kit — project settings. Created by /ba-new, see docs/design.md §3 of the kit.
 # Fields marked (BA) are changed only by the BA or on the BA's explicit OK.
-kit_version: "0.2.0"
+kit_version: "0.3.0"
 
 project:
   name: "{{PROJECT_NAME}}"            # (BA)
@@ -54,14 +54,16 @@ jira:
     epic: "{{ISSUE_TYPE_EPIC}}"
     story: "{{ISSUE_TYPE_STORY}}"
     task: "{{ISSUE_TYPE_TASK}}"
-  statuses:                           # filled by jira-sync on first run (needs an issue to read transitions)
+  statuses:                           # IDs; filled by jira-sync on first run (needs an issue to read transitions)
     todo: null
     in_progress: null
     done: null
   priority_on_create: {{PRIORITY_ON_CREATE}}
-  priority_map: { Must: High, Should: Medium, Could: Low }
+  priority_map: { Must: High, Should: Medium, Could: Low }   # (BA) priority names in this Jira site
+  # sprint: created by the BA in the Jira UI — the Atlassian MCP has no sprint tools
   labels:
-    project: "{{JIRA_LABEL}}"
+    project: "{{JIRA_LABEL}}"            # (BA) on every issue; jira-sync searches by it
+    moscow: { Must: must-have, Should: should-have, Could: could-have }   # (BA) MoSCoW label per story priority
 
 repo:
   url: "{{REPO_URL}}"
@@ -71,7 +73,7 @@ repo:
 stack:
   deploy:
     profile: static                   # (BA) static (default) | local | cloudflare | none — kit design §3.1
-    url: null                         # set by deploy
+    url: null                         # set by deploy (public URL; null for local)
     prod_requires_ok: true            # cannot be disabled
   constraints: []                     # derived from the profile + project DECs by the spec step
 

@@ -23,10 +23,10 @@ You are a senior business analyst acting as the BA's analysis partner. Load `ba-
 
 | § | Section | Rules |
 |---|---|---|
-| 1 | **Conflicts (`CON`)** | Two positions that cannot both be fully satisfied. Each: position A and B (who, quote, `[KEY · Section]`) · why they conflict · what is at stake for the PoC · linked IDs · **2–3 options** (description · pros · cons · effect on scope) · `Claude's recommendation` with the proposed outcome (a/b/c) · `Status: Open`. Include conflicts the sources already resolved: record the resolution as a prior `DEC` with its source and check whether it created new questions (new scope always needs details and acceptance criteria). |
+| 1 | **Conflicts (`CON`)** | Two positions that cannot both be fully satisfied. Each: position A and B (who, quote, `[KEY · Section]`) · why they conflict · what is at stake for the PoC · linked IDs · **2–3 options** (description · pros · cons · effect on scope) · `Claude's recommendation` with the proposed outcome (a/b/c) · `Status: Open`. Include conflicts the sources already resolved: record the resolution as a prior `DEC` with its source and check whether it created new questions (new scope always needs details and acceptance criteria). **Opposing positions are a CON, not a GAP (K-11):** if an open question can be answered in two ways that each match a quoted position of a named stakeholder — or a requirement vs. a recorded decision, constraint or OOS (e.g. "users change *their own* records" vs. "no login") — it is a `CON` with both positions and options, never a `GAP` or a silent `ASM`. |
 | 1 | **Architect rule candidate** | Run `ba-rules` §7 now. If `stack.deploy.profile` is `static` or `local` and any REQ/NFR/DEC needs state shared between devices or users (use requirements §8 item 7 as the starting list, then check every row against the signs in §7), write one `CON` tagged **`Architect rule`**: position A = the shared-data requirements (IDs, quotes); position B = the deploy profile from `ba-project.yaml` and any stakeholder constraint against servers, cloud or maintenance (quotes). Options always compare `static` (with the requirement explicitly narrowed for the PoC, e.g. single-device demo + seed data + UI banner + `ASM`), `local`, `cloudflare`; outcome (c) is also possible. If the profile is `cloudflare` or `none`, or no requirement needs shared data, write one line in §2 saying the rule was checked and why it does not fire. |
 | 2 | **Goal-vs-constraint check** | Table: every element of the definition of done and of the business problem · source · constraints in play · achievable? · item. Any mismatch is a `CON` or `RSK`. |
-| 3 | **Gaps (`GAP`)** | Missing information as a concrete question to a **named** stakeholder (as written in the sources) · why it matters · linked IDs · `Status: Open`. Unconfirmed `Derived` requirement rows are listed here as questions for the BA. |
+| 3 | **Gaps (`GAP`)** | A **missing fact** (not a choice between positions — that is a `CON`) as a concrete question to a **named** stakeholder (as written in the sources) · why it matters · linked IDs · `Status: Open`. Unconfirmed `Derived` requirement rows are listed here as questions for the BA. |
 | 4 | **Source inconsistencies (`SI-n`)** | Dangling references, numbers without basis, contradicting statements, ambiguous statuses — with both sources. |
 | 5 | **Risks (`RSK`)** | Risk · owner · impact · mitigation. Include the risk to `project.deadline` if scope grows. |
 | 6 | **Assumptions (`ASM`)** | Only those needed to proceed; each `ASSUMPTION — not validated`, with owner and "what changes if wrong". |
@@ -41,7 +41,9 @@ Write the file with Part A complete before starting Part B, so the BA can read i
 
 ## Part B — decisions with the BA (decision point H2)
 
-Go through **each `Open` conflict, one at a time** — the architect-rule CON included:
+**0. Overview first (K-10).** Before the first question, show the BA **one table** in the chat language with every `CON`, `GAP`, `ASM` and `RSK` from Part A: ID · gist in one line · options (for CON: the option letters with a few words each; for GAP: who is asked; for ASM: the assumed value; for RSK: the mitigation) · `Claude's recommendation`. Below it, list the §8 observations and opposing positions that were **not** raised as a CON and where they went (e.g. "<topic> — recorded as GAP-007"), so the BA can spot a missing conflict. Then ask: "Начинаем решать?" — one by one, or all in one answer. Decisions interact (one CON can change the options of another; ASMs depend on CONs): if the BA adds a CON from the overview, write it into Part A first. When resuming Part B, show the overview again with the decided items marked.
+
+Then go through **each `Open` conflict, one at a time** (or take the BA's answers in one message) — the architect-rule CON included:
 1. Summarise it in the chat language in 3–5 lines: positions, options, `Claude's recommendation`.
 2. Ask the BA for the option **and** the outcome — (a) Decided, (b) Prototype both (A/B), (c) Deferred — sponsor decision (use the question tool if available). Suggest (b) only for conflicts that are key to the demo; warn if more than `decisions.max_ab` conflicts would end up as A/B.
 3. Record the answer as `DEC-xxx`: conflict · `Outcome` · decision · rationale · affects (REQ/NFR/CON/OOS) · `Decided by: <people.ba> (BA[, proxy for <people.sponsor>])` · date. Set the conflict to `Resolved` (a), `Resolved — A/B` (b) or `Deferred` (c). Note in the run log whether the BA chose differently from the recommendation.
@@ -56,6 +58,8 @@ Never decide for the BA; never record a DEC the BA did not confirm in this conve
 
 ## Quality bar (check before finishing; report failures)
 - Every CON has 2–3 options, a labelled recommendation and a status; no CON is `Open` at the end of Part B.
+- Every GAP is a missing fact; no GAP or ASM hides two quoted positions (K-11).
+- The Part B overview table was shown before the first decision (K-10).
 - Every DEC has outcome, `Decided by`, date and links; A/B count ≤ `decisions.max_ab` or the BA accepted the excess explicitly.
 - Every quote is found verbatim in its source (Grep); every ID referenced exists.
 - The architect rule was checked (CON or the one-line "does not fire" note).
