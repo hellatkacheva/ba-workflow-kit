@@ -9,10 +9,13 @@
       "Read(./.env.*)",
       "Read(./**/.dev.vars)"
     ],
-    "ask": [
+    "allow": [
       "mcp__{{MCP_SERVER}}__createJiraIssue",
       "mcp__{{MCP_SERVER}}__editJiraIssue",
       "mcp__{{MCP_SERVER}}__transitionJiraIssue",
+      "mcp__{{MCP_SERVER}}__addCommentToJiraIssue"
+    ],
+    "ask": [
       "Bash(git push:*)",
       "Bash(npx wrangler deploy:*)",
       "Bash(npx wrangler d1 migrations apply:*)",

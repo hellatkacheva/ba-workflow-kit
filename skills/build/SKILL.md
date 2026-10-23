@@ -30,6 +30,7 @@ Also: `package.json` with pinned dev dependencies installed locally only (`npm i
 ## For each story
 1. Read the story and the spec parts it maps to (`test-plan.md` §2). Say in the chat language, in 3 lines, what you will build.
 2. **Tests first:** turn every Gherkin scenario of the story into an automated test as mapped in `test-plan.md` (use the test clock for time rules). Run them — they must fail for the right reason. A scenario that needs a later story is marked in `build-status.md` with the story it waits for (never silently skipped).
+   **Code before tests → stop.** If code for this story exists before its tests were seen failing — written earlier in this run, left from a batch, or the new tests pass on their first run although the story needs new behaviour — do not go on and do not commit. Tell the BA in the chat language: which story, which files, how it happened, and the options: (a) set the code aside (`git stash` / revert the story's code), run the tests and see them red, put the code back (`Claude's recommendation`); (b) keep it and record the deviation. Record the BA's answer as `B-n` in `build-status.md`. A verification story without new behaviour (tests green on the first run by design) is not a deviation — say so in its row.
 3. Implement the minimum to make them pass. Only constants from the config module — no magic numbers, no texts that differ from the story / `ui.md`.
 4. Run the **full** test suite. Everything must pass before you continue.
 5. Update `docs/04-spec/build-status.md` (format below) and the AC → test coverage in `test-plan.md`.
@@ -40,7 +41,7 @@ Also: `package.json` with pinned dev dependencies installed locally only (`npm i
 - Never change requirements, stories or the spec silently. Ambiguous, contradictory or impossible → stop, explain in the chat language, give options with `Claude's recommendation`, wait for the BA. Record the answer as `B-n` in `build-status.md` and, if it decides a trade-off or changes behaviour, as `DEC-xxx` in `analysis-log.md` (section "Decisions during build").
 - Nothing beyond the story and the profile (no extra services, no third-party stores, no features "while we are here").
 - No real personal data; no secrets in the repo or in the chat. Test hooks stay off in the deployed configuration.
-- One story per run unless the BA says "continue"; the BA checks each story.
+- One story per run unless the BA says "continue"; the BA checks each story. The BA asks to build several stories without stopping ("собери все истории сразу") → that waives H6 for the named stories: record `gate-waived` in `approvals` at once (`ba-rules` §4), put `Built without BA check — pending` in the BA column of each, keep tests first for every story, and at the end ask for the deferred check.
 - After an accepted story, a redeploy happens only through the `deploy` step with the BA's OK.
 
 ## `docs/04-spec/build-status.md`

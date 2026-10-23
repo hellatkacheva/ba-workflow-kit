@@ -60,7 +60,11 @@ jira:
     done: null
   priority_on_create: {{PRIORITY_ON_CREATE}}
   priority_map: { Must: High, Should: Medium, Could: Low }   # (BA) priority names in this Jira site
-  # sprint: created by the BA in the Jira UI — the Atlassian MCP has no sprint tools
+  sprint:                             # filled by jira-sync; the sprint itself is created and started by the BA in the Jira UI (no MCP sprint tools)
+    field: null                       # sprint field id, e.g. customfield_10020 (null = no sprints in this project)
+    id: null
+    name: null
+    board_id: null
   labels:
     project: "{{JIRA_LABEL}}"            # (BA) on every issue; jira-sync searches by it
     moscow: { Must: must-have, Should: should-have, Could: could-have }   # (BA) MoSCoW label per story priority

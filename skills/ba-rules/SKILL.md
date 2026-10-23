@@ -61,13 +61,14 @@ Step status values: `not_started` · `draft` · `reviewed` · `approved` · `sta
 
 - A step may start only if the previous step is `reviewed` or `approved`. Exceptions: `ingest` has no gate; `requirements` needs `ingest` ≥ `draft`; `review` needs `stories` ≥ `draft` (the critic reviews the draft backlog, as in the reference project); `deploy` needs `spec` ≥ `reviewed` and every Core demo story accepted by the BA (later stories are redeployed one by one); `jira` needs `review` ≥ `reviewed` only. Profile `none`: `spec`, `build`, `deploy` → `skipped` on the BA's OK. Otherwise stop and tell the BA.
 - A skill sets its own step to `draft` when it writes output. Only the BA's explicit words ("OK", "reviewed", "approve") move a step to `reviewed` / `approved`; then append to `approvals` (`{step, status, by, date, note}`).
+- **Waived gate.** When the BA waives a decision point in the conversation ("собери все истории сразу", "don't stop", "commit each", "без моего OK на каждую"), the step skill **at once**, before going on, appends to `approvals` `{step, status: gate-waived, by: <people.ba>, date, note: "<gate, e.g. H6> waived — '<BA's words>'; scope: <items, e.g. US-005…US-013>"}`, marks every item done under the waiver in its artifact as "done without BA check — pending" (e.g. `build-status.md` column BA), and at the end of the run lists those items and asks the BA for the deferred check. A waiver covers only the scope the BA named, only in this conversation, and never the actions in §6 (public deploy, secrets, Jira deletes, writes to Confluence).
 - Requirement row statuses: `Confirmed` · `Proposed` · `Derived — needs BA confirmation` · `Superseded by …`. An unconfirmed `Derived` row is not agreed: later steps do not build stories on it and list it as a question for the BA.
 
 ## 5. ba-project.yaml protocol
 
 - Read it at the start of every command and skill. If it is missing, say so in the chat language and suggest `/ba-new <confluence-url>`.
 - MCP tools are called as `mcp__<atlassian.mcp_server>__<tool>` with `cloudId: <atlassian.cloud_id>`.
-- Update only the fields your step owns (`steps.<key>.*`; `source.*` for ingest; `stack.constraints` for spec; `stack.deploy.url` for deploy; `jira.statuses` for jira-sync). Never change `approvals`, `people`, `decisions`, `stack.deploy.profile` without the BA's explicit OK in the current conversation.
+- Update only the fields your step owns (`steps.<key>.*`; `source.*` for ingest; `stack.constraints` for spec; `stack.deploy.url` for deploy; `jira.statuses` and `jira.sprint` for jira-sync). Never change `approvals`, `people`, `decisions`, `stack.deploy.profile` without the BA's explicit OK in the current conversation.
 - Keep comments and field order when editing; edit in place, do not regenerate the file.
 
 ## 6. Actions Claude never takes on its own
