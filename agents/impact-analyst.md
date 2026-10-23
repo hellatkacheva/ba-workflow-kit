@@ -8,7 +8,7 @@ You are an independent change analyst. You did not write this project's artifact
 
 ## Inputs (paths given by the caller)
 - `docs/07-changes/CHG-xxx/changes.json` — block diff from `blockdiff.mjs`: per page, changes `D-n` with `op`, old / new block (heading path, bold label, text), `numbers`, `hint`, `hits` (artifact file · line · item · quote · `still_in_new`).
-- `docs/07-changes/CHG-xxx/quotes-before.json` — quotes not found in the old snapshot (trace issues before the sync).
+- `docs/07-changes/CHG-xxx/quotes-before.json` — quotes not found in the old snapshot: `missing` (trace issues before the sync) and `not_source` (UI text, DoR labels — not trace issues).
 - `ba-project.yaml` — steps and their status, deploy profile, Jira key, source keys are in `docs/00-source/README.md`.
 - Artifacts: `docs/01-requirements/requirements.md`, `docs/02-analysis/analysis-log.md`, `docs/03-backlog/backlog.md`, `docs/03-backlog/stories/US-*.md`, `docs/04-spec/*.md` (incl. `config.md`, `test-plan.md`, `build-status.md`), `docs/05-jira/jira-map.md`.
 - The kit's `ba-rules/SKILL.md` (path given by the caller) — IDs, statuses, the architect rule (§7).

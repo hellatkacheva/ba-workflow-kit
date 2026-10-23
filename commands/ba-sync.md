@@ -26,4 +26,4 @@ Before the OK nothing outside the snapshot folder and `docs/07-changes/` is writ
 3. Explain what it does: weekdays 05:00 UTC; compares page / child / attachment versions with `ba-project.yaml`; opens one issue labelled `watch.issue_label` ("run /ba-sync") or comments on the open one (once per new state); auth / not-found errors → one issue labelled `ba-watch-error`. It never writes to the repository or to Confluence. After a sync is committed and pushed, the BA closes the issue.
 
 ## Log
-Append one row to `docs/run-log.md`: date, `/ba-sync` (or `setup-watch`), versions, CHG id, where it stopped and why.
+Append one row to `docs/run-log.md`: date, `/ba-sync` (or `setup-watch`), versions, CHG id, where it stopped and why — only when the run wrote something (snapshot, CHG, watch files). No new version → write nothing, not even `run-log.md`; the reply to the BA is the only record (as `change-impact` A1).

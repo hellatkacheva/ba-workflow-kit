@@ -20,7 +20,7 @@ Script: `scripts/blockdiff.mjs` in this skill's directory (Node ≥ 18, no depen
 - Main page: `getConfluencePage` (`pageId: source.page_id`, `contentFormat: markdown`) → `version.number`, `version.message`. If the response has no version block, use `fetch` with id `ari:cloud:confluence:<cloud_id>:page/<page_id>` (as `ingest-confluence` did; see the snapshot's `meta.json` notes).
 - If `source.include_children`: `getConfluencePageDescendants` → id, title; the version of each child the same way.
 - Attachments are not visible through MCP. If the BA came from a watch issue that lists attachment changes, ask the BA to put the files into `docs/00-source/inbox/`; they are classified `C6`.
-- Compare with `source.version` and `source.children`. Nothing changed → say "no new version" (and, if a watch issue is open, that it can be closed) and stop. Write nothing.
+- Compare with `source.version` and `source.children`. Nothing changed → say "no new version" (and, if a watch issue is open, that it can be closed) and stop. Write nothing — no snapshot, no CHG, no `run-log.md` row.
 
 ### A2. Snapshot the new versions
 For every changed or new page run `ingest-confluence` **§1–§2 only** (snapshot mode): new folder `docs/00-source/confluence/<pageId>/v<new>/` with `page.html`, `page.md`, `meta.json`. `<new>` is the version Confluence reports — usually `v<old+1>`; if the page was edited several times since the last sync, the snapshot is the current version and the CHG covers the cumulative change. Never touch an existing `v<N>` folder. A removed child page keeps its old snapshots. Working sources (`docs/00-source/NN-*.md`), README and `ba-project.yaml` stay unchanged until Phase B.
@@ -33,10 +33,10 @@ node <skill-dir>/scripts/blockdiff.mjs diff --root docs/00-source/confluence --p
 node <skill-dir>/scripts/blockdiff.mjs quotes --root docs/00-source/confluence --page <id>:<old> [--page <childId>:<old>] --docs docs --out docs/07-changes/CHG-xxx/quotes-before.json
 ```
 
-`-` = page did not exist (new child) or no longer exists (removed child). Every page in `source.children` is passed, unchanged ones as `<id>:<v>:<v>`.
+`-` = page did not exist (new child) or no longer exists (removed child). Every page in `source.children` is passed, unchanged ones as `<id>:<v>:<v>`. The script drops Confluence service attributes (`data-local-id` and the like) before comparing, so a change in the MCP html format alone gives no changes.
 
 - `changes.json`: per page, changes `D1…Dn` with `op` (`cosmetic` · `modified` · `added` · `removed` · `moved`), old / new block (path of headings, bold label, text), `numbers` (when digits changed), `hint` (`C0` for cosmetic; `C1?` when no number changed and the text is ≥ 80 % the same) and `hits` — artifact lines whose source quote lies in the old block, with `still_in_new`.
-- `quotes-before.json`: quotes on artifact lines that cite a source (`[KEY · Section]`) and are **not** found in the old snapshot. Read each: a real trace break (the quote was edited by hand) or a false positive (UI text, a phrase quoted from another artifact). Real breaks → show them to the BA before the report: fix first, or continue with them listed as a risk in the CHG. The BA decides.
+- `quotes-before.json`: quotes on artifact lines that cite a source (`[KEY · Section]`) and are **not** found in the old snapshot. `missing` — source quotes; `not_source` — quotes the script recognises as UI text (`ui-text`: bold `**"…"**`, or after `Notice text:`, `Message:`, `Button:` …) or Definition of Ready / Done labels (`dor-label`: after `DoR`, `DoD`); they are listed in the CHG as such, not as trace issues. Read each `missing` quote: a real trace break (the quote was edited by hand) or a false positive (a phrase quoted from another artifact). Real breaks → show them to the BA before the report: fix first, or continue with them listed as a risk in the CHG. The BA decides.
 
 ### A4. Impact analysis (agent `impact-analyst`)
 Delegate to `impact-analyst` with: the CHG id, paths of `changes.json` and `quotes-before.json`, `ba-project.yaml`, the path of the `ba-rules` skill's `SKILL.md`, and the instruction to return the report in the agent's format. The agent only reads; it returns text.

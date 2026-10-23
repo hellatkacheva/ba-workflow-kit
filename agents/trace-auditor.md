@@ -15,7 +15,7 @@ You are a traceability auditor. You did not do the rework. You **change no file*
 ## Checks
 | # | Check | Violation |
 |---|---|---|
-| T1 | Every quote in `quotes-after.json` that belongs to an **active** item (not `Superseded`) | the quote is not in the current snapshot. Quotes on `Superseded` items may point to the old snapshot — fine if the item says which CHG superseded it. UI texts and quotes of other artifacts are false positives — list them separately, not as violations |
+| T1 | Every quote in `quotes-after.json` that belongs to an **active** item (not `Superseded`) | the quote is not in the current snapshot. Quotes on `Superseded` items may point to the old snapshot — fine if the item says which CHG superseded it. `not_source` entries (UI text, DoR / DoD labels — classified by the script) are not checked; quotes of other artifacts in `missing` are false positives — list them separately, not as violations |
 | T2 | Every active REQ / NFR / CST / OOS has a source `[KEY · Section]` whose key is in the README and whose section exists in the current snapshot (or a DEC / CHG as its source) | missing or dangling source |
 | T3 | Every `Superseded by X` points to an existing X; X is active or itself superseded further; no cycle; the superseding item cites the CHG | broken chain |
 | T4 | Every active story's `Traces to` lists only existing IDs, none of them `Superseded` (unless the story itself is superseded or says `Revised: CHG-xxx`) | story traces to a superseded / missing item |

@@ -40,6 +40,11 @@ const qnorm = (s) => norm(s).toLowerCase()
   .replace(/\*\*|__|`/g, '')                     // bold / code marks inside quotes
   .replace(/[–—]/g, '-');
 
+// Confluence service attributes that change with the export format, not with the text
+// (v2 snapshots have none, v3 has data-local-id on every element) — dropped before parsing.
+const SERVICE_ATTR = /\s(?:data-local-id|local-id|ac:local-id|ac:macro-id|ac:schema-version|data-uuid|data-layout|data-table-local-id|data-renderer-start-pos)="[^"]*"/g;
+const cleanHtml = (html) => html.replace(SERVICE_ATTR, '');
+
 const BLOCK = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'tr', 'pre']);
 const CONTAINER_OF_P = new Set(['li', 'td', 'th']);
 
@@ -195,6 +200,17 @@ function mdFiles(dir) {
   return out;
 }
 
+// quotes on a source-citing line that are not source quotes: UI copy the artifact specifies
+// (Notice text: **"…"**) and Definition of Ready / Done labels (DoR "size agreed")
+const DOR_BEFORE = /\b(?:DoR|DoD|Definition of (?:Ready|Done))\b[^"“]{0,20}$/i;
+const UI_BEFORE = /\b(?:notice|message|banner|button|label|error|toast|hint|placeholder|title|caption|tooltip|copy|text)\s*:\s*\**\s*$/i;
+function quoteKind(text, start, end) {
+  const before = text.slice(Math.max(0, start - 40), start);
+  if (DOR_BEFORE.test(before)) return 'dor-label';
+  if (UI_BEFORE.test(before) || (text.slice(start - 2, start) === '**' && text.slice(end, end + 2) === '**')) return 'ui-text';
+  return 'source';
+}
+
 function artifactQuotes(docs) {
   const quotes = [];
   for (const file of mdFiles(docs)) {
@@ -213,7 +229,7 @@ function artifactQuotes(docs) {
         const quote = (q[1] ?? q[2]).replace(/\u0001/g, '"');
         if (quote.length < 8 || / \| /.test(quote)) continue;   // too short, or spans table cells — not a quote
         const fragments = quote.split(/…|\.\.\.|\[…\]/).map((f) => qnorm(f).replace(/^[\s,.;:]+|[\s,.;:]+$/g, '')).filter((f) => f.length >= 4);
-        if (fragments.length) quotes.push({ file: relative(process.cwd(), file).replace(/\\/g, '/'), line: i + 1, item, quote, fragments });
+        if (fragments.length) quotes.push({ file: relative(process.cwd(), file).replace(/\\/g, '/'), line: i + 1, item, quote, fragments, kind: quoteKind(text, q.index, re.lastIndex) });
       }
     });
   }
@@ -235,7 +251,7 @@ function locate(q, blocks) {
 function loadBlocks(root, id, v) {
   const f = join(root, id, `v${v}`, 'page.html');
   if (!existsSync(f)) { console.error(`snapshot not found: ${f}`); process.exit(1); }
-  return parseBlocks(readFileSync(f, 'utf8'));
+  return parseBlocks(cleanHtml(readFileSync(f, 'utf8')));
 }
 const write = (obj) => {
   const json = JSON.stringify(obj, null, 2) + '\n';
@@ -269,8 +285,12 @@ if (cmd === 'diff') {
   if (!args.docs) { console.error('quotes needs --docs'); process.exit(2); }
   const blocks = args.page.flatMap((spec) => { const [id, v] = spec.split(':'); return loadBlocks(args.root, id, v); });
   const quotes = artifactQuotes(args.docs);
-  const missing = quotes.filter((q) => !locate(q, blocks))
-    .map((q) => ({ file: q.file, line: q.line, item: q.item, quote: q.quote, fragments_missing: q.fragments.filter((f) => !blocks.some((b) => qnorm(b.text).includes(f))) }));
-  write({ generated_by: 'change-impact/scripts/blockdiff.mjs', generated_at: new Date().toISOString(), pages: args.page, total: quotes.length, found: quotes.length - missing.length, missing });
-  console.error(`quotes: ${quotes.length - missing.length} / ${quotes.length} found; missing ${missing.length}`);
+  const notFound = quotes.filter((q) => !locate(q, blocks))
+    .map((q) => ({ file: q.file, line: q.line, item: q.item, quote: q.quote, kind: q.kind, fragments_missing: q.fragments.filter((f) => !blocks.some((b) => qnorm(b.text).includes(f))) }));
+  // UI copy and DoR labels are not expected in the source — listed apart, not as trace breaks
+  const missing = notFound.filter((q) => q.kind === 'source');
+  const notSource = notFound.filter((q) => q.kind !== 'source');
+  const found = quotes.length - notFound.length;
+  write({ generated_by: 'change-impact/scripts/blockdiff.mjs', generated_at: new Date().toISOString(), pages: args.page, total: quotes.length, found, missing, not_source: notSource });
+  console.error(`quotes: ${found} / ${quotes.length} found; missing ${missing.length}; not source (ui-text / dor-label) ${notSource.length}`);
 }
