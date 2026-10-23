@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Reviewed |
 | **Reviewed by** | Olga, 2026-10-20 |
-| **Version** | v1.8 · 2026-10-23 (тест A шаги 6–9: K-14…K-17 — §12); v1.7 · 2026-10-22 (тест A шаги 1–5: K-12, K-13; решения BA по реализации итерации 2b — §12.3); v1.6 · 2026-10-22 (тест A шаги 3–5: K-10, K-11; итерация 2b — spec, build, deploy, jira-sync — §12.3); v1.5 · 2026-10-21 (решения BA по итерации 2a: гейт ревью как в DeskShare, проверка git status после критика — §12.2); v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
+| **Version** | v1.8 · 2026-10-23 (тест A шаги 6–9: K-14…K-17 — §12; итерация 3 — `/ba-sync`, `change-impact`, агенты, watch — §13; план теста B — §8.1); v1.7 · 2026-10-22 (тест A шаги 1–5: K-12, K-13; решения BA по реализации итерации 2b — §12.3); v1.6 · 2026-10-22 (тест A шаги 3–5: K-10, K-11; итерация 2b — spec, build, deploy, jira-sync — §12.3); v1.5 · 2026-10-21 (решения BA по итерации 2a: гейт ревью как в DeskShare, проверка git status после критика — §12.2); v1.4 · 2026-10-21 (повторный прогон теста A: K-7…K-9; итерация 2a — §12); v1.3 · 2026-10-21 (исправления по итогам теста A, шаг 2 — §12); v1.2 · 2026-10-20 (v1.1 + ответы BA на Q8–Q9; v1.1: ответы на Q1–Q7, профили деплоя, правило архитектора, страница теста C) |
 | **Author** | Olga Tkacheva (BA) + Claude |
 | **Reference project** | `C:\Projects\deskshare\deskshare` (read-only, commit `215a051`) |
 | **Test source** | Confluence `hellatkacheva.atlassian.net` · space `DSSRC` · page `65670` (v2) — тесты A/B; page `294916` (v1, GearLoan) — тест C |
@@ -28,12 +28,13 @@
 
 | Путь в плагине | Назначение |
 |---|---|
-| `.claude-plugin/plugin.json` | Манифест: имя `ba-workflow-kit`, версия, описание |
+| `.claude-plugin/plugin.json` | Манифест: имя `ba-workflow-kit`, версия (0.4.0), описание |
 | `commands/ba-new.md` · `ba-status.md` · `ba-continue.md` · `ba-sync.md` | 4 команды для пользователя |
 | `skills/<step>/SKILL.md` | 9 skills по шагам + `change-impact` + `ba-rules` |
 | `skills/<step>/templates/*.md` | Шаблоны артефактов (requirements, analysis-log, story, spec-файлы, CHG) |
 | `agents/*.md` | 3 субагента |
-| `templates/project/` | Заготовки для `/ba-new`: `CLAUDE.md`, `ba-project.yaml`, `docs/**/README.md`, `.github/workflows/confluence-watch.yml`, `scripts/confluence-watch.mjs` |
+| `skills/ba-rules/templates/project/` | Заготовки для `/ba-new` (R2): `CLAUDE.md`, `ba-project.yaml`, `docs/**/README.md`, `.github/workflows/confluence-watch.yml`, `scripts/confluence-watch.mjs` |
+| `skills/change-impact/scripts/blockdiff.mjs` | Детерминированный блочный diff снимков и поиск цитат-источников в артефактах (§5.1, §13) |
 | `hooks/hooks.json` | v1: пусто. Кандидат на v2 — PreToolUse-guard для запрещённых действий (§7.3) |
 
 MCP-сервер **не** входит в плагин: он настраивается в `.mcp.json` проекта, а его имя хранится в `ba-project.yaml` (`atlassian.mcp_server`). Skills вызывают инструменты `mcp__<mcp_server>__*`.
@@ -45,7 +46,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | `/ba-new` | `<confluence-url>` `[--jira KEY]` | Проверяет MCP и авторизацию, по URL находит cloudId и page id, создаёт `ba-project.yaml` и скелет `docs/`. Читает типы задач и статусы Jira-проекта по ID. Запускает шаг 1 (ingest). | `ba-project.yaml`, `CLAUDE.md`, `docs/00-source/**`, `.github/workflows/confluence-watch.yml` | Подтверждение BA: проект/пространство/страница/Jira key/стек — перед записью yaml |
 | `/ba-status` | — | Только чтение: таблица шагов (статус, утверждение, дата), версия источника — локальная и в Confluence, открытые CON/GAP, stale-артефакты, открытые CHG. | ничего | — |
 | `/ba-continue` | `[step]` | Берёт первый шаг, у которого `status ≠ approved/reviewed` и предыдущий шаг ≥ `reviewed`, и запускает его skill. Идёт **до ближайшей HITL-точки** (решение BA, Q7): шаги без HITL выполняются подряд, на HITL — стоп (для build — после каждой истории). | через skill шага | На каждой HITL-точке (§7). Не переходит к следующему шагу, пока BA не перевёл текущий в `reviewed` (исключения: ingest → requirements; stories → review, §12.2 B-1; deploy — после spec `reviewed` и принятых BA историй Core demo; jira — после review `reviewed`, §12.3) |
-| `/ba-sync` | `[--version N]` | Подтягивает текущую версию страницы, сравнивает со снимком, запускает skill `change-impact`, показывает CHG-отчёт; после OK переделывает только затронутое. | `docs/00-source/confluence/**`, `docs/07-changes/CHG-xxx.md`, затронутые артефакты | После отчёта CHG (OK на план переделки); далее — HITL-точки каждого перезапускаемого шага |
+| `/ba-sync` | `[setup-watch]` | Без аргумента — skill `change-impact`: текущие версии страницы и детей через MCP, снимок `v<new>`, блочный diff, отчёт CHG, после OK — переделка только затронутого. `setup-watch` — ставит шаблон Action и перечисляет шаги BA (§6). `--version N` убран: MCP отдаёт только текущую версию (§13 I3-1) | `docs/00-source/confluence/**`, `docs/07-changes/CHG-xxx.md` + `CHG-xxx/*.json`, затем затронутые артефакты | После отчёта CHG (H9, OK построчно); далее — HITL-точки перезапускаемых шагов (H10 на каждый новый CON) |
 
 ### 1.3 Skills
 
@@ -63,17 +64,17 @@ MCP-сервер **не** входит в плагин: он настраива�
 | `build` | 7 | `/build` | spec (≥ reviewed), история | `app/` (стек по профилю, §12.3), `build-status.md`, `test-plan.md` | BA принимает каждую историю; следующая — только после принятия |
 | `deploy` | 8 | `/deploy` | `app/`, `stack.deploy.profile` (§3.1) | `static` → GitHub Pages (`templates/pages.yml`); `local` → инструкция запуска; `cloudflare` → Worker + D1; smoke-тест, `build-status.md`, `stack.deploy.url` | **Явное OK на каждую публичную выкладку в текущем разговоре**; секреты и логины вводит только BA |
 | `jira-sync` | 9 | `/jira-sync` | backlog (≥ reviewed), analysis-log §open questions, build-status, `jira` и `atlassian` из yaml | Jira-задачи, `docs/05-jira/jira-map.md`, `jira.statuses`, `jira.sprint` | **OK на план перед любой записью** — одобренный план разрешает именно эти записи (K-15); спринт BA создаёт и запускает до создания задач (K-16) |
-| `change-impact` | sync | новое | старый и новый снимок, trace-index, все артефакты | `docs/07-changes/CHG-xxx.md`, затем scoped-перезапуск шагов | **OK на план переделки** |
+| `change-impact` | sync | новое | старый и новый снимок, `changes.json` (скрипт), артефакты 01–05 | `docs/07-changes/CHG-xxx.md`, затем scoped-перезапуск шагов (`ba-rules` §4 «Scoped mode») | **OK на план переделки построчно** (H9); новый CON — H10 |
 
 ### 1.4 Agents
 
 | Агент | Роль | Инструменты | Вход | Выход | Кто вызывает |
 |---|---|---|---|---|---|
 | `backlog-reviewer` | Скептичный QA lead / senior BA, который не писал этот бэклог (как в DeskShare) | Read, Grep, Glob, Write (только `review.md`) | `CLAUDE.md`, `docs/00-source/`, requirements, analysis-log, backlog | `docs/03-backlog/review.md`: таблица # · severity · файл · finding · evidence · fix + вердикт | `review-backlog`; после работы агента `review-backlog` проверяет `git status`: изменён только `review.md`, иначе стоп и сообщение BA (§12.2) |
-| `impact-analyst` | Независимый аналитик изменений: классифицирует diff и прослеживает влияние, ничего не правит | Read, Grep, Glob, Write (только `docs/07-changes/`) | diff снимков (`changes.json`), `trace-index.json`, артефакты шагов 2–9 | Черновик `CHG-xxx.md` (§5.4) | `change-impact` |
-| `trace-auditor` | Проверяет трассировку: каждая цитата есть в текущем снимке, у каждого REQ есть источник, у каждой истории — REQ/DEC, у каждого AC — тест | Read, Grep, Glob, Write (только `docs/.ba/trace-index.json`, `trace-audit.md`) | `docs/00-source/`, docs 01–05 | `trace-index.json` (§5.2), список нарушений | конец шагов 2–5, начало `/ba-sync`, `/ba-status` |
+| `impact-analyst` | Независимый аналитик изменений: классифицирует diff C0–C6 и прослеживает влияние, ничего не правит | Read, Grep, Glob (только чтение, §13 I3-3) | `changes.json`, `quotes-before.json`, `ba-project.yaml`, артефакты шагов 2–9, `ba-rules` | Текст отчёта (разделы §5.4 1–6); `change-impact` проверяет его и пишет `CHG-xxx.md` | `change-impact` (фаза A4) |
+| `trace-auditor` | Проверяет целостность трассировки после переделки: цитаты активных элементов есть в новом снимке, у REQ есть источник, цепочки `Superseded` целы, у историй — живые REQ/DEC, у AC — тесты, config и Jira-map актуальны, изменения только в одобренных строках плана | Read, Grep, Glob (только чтение) | `quotes-after.json`, CHG, артефакты 01–05, `ba-rules` | Текст: таблица нарушений T1–T10 + вердикт | `change-impact` (фаза B4); по просьбе BA |
 
-Субагенту выдаём только Read, Grep, Glob и Write в свою папку. MCP и Bash у них нет: всё, что идёт в Confluence/Jira или Git, делает основной поток, который видит BA.
+Субагенту выдаём только Read, Grep, Glob (критику — ещё Write в `review.md`). MCP и Bash у них нет: всё, что идёт в Confluence/Jira или Git, делает основной поток, который видит BA.
 
 ---
 
@@ -241,14 +242,19 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 | # | Действие | Кто | Результат |
 |---|---|---|---|
-| 1 | Прочитать `meta` текущей версии (+ дети, вложения) | основной поток, MCP | Если версия = `source.version` и списки равны → «изменений нет», стоп |
-| 2 | Сохранить снимок `v<new>` | основной поток | §4.2 |
-| 3 | Блочный diff `v<old>` ↔ `v<new>` по нормализованному HTML: блок = заголовок / абзац / пункт списка / строка таблицы; ключ блока = путь заголовков + порядковый номер | скрипт в skill (детерминированно) | `docs/07-changes/CHG-xxx/changes.json`: `{block_path, old_text, new_text, op: added/removed/modified/moved}` |
-| 4 | Обновить и проверить трассировку | `trace-auditor` | `trace-index.json` на `v<old>` |
-| 5 | Классифицировать изменения и пройти цепочку | `impact-analyst` | черновик `CHG-xxx.md` |
-| 6 | Показать отчёт BA (RU, таблицы), спросить OK по каждой строке плана | основной поток | `Approved by` в CHG |
-| 7 | Пометить затронутые шаги `stale`, перезапустить только затронутые элементы (scoped mode) | skills шагов | Новые / `Superseded by …` элементы |
-| 8 | `source.version = new`, коммит `sync: CHG-xxx v<old>→v<new>` | основной поток | — |
+| A0 | Гейт: `steps.ingest` ≥ draft; открытый CHG → продолжить его; `git status` чистый, иначе предложить коммит | `change-impact` | — |
+| A1 | Текущие версии страницы и детей (MCP `getConfluencePage`, при отсутствии версии — `fetch` по ARI; `getConfluencePageDescendants`). Вложения через MCP не видны — только из issue watch | основной поток, MCP | Версии = yaml → «изменений нет», стоп, ничего не пишется |
+| A2 | Снимок `v<new>` каждой изменённой / новой страницы (`ingest-confluence` §1–2); старые `v<N>` не трогаются. `<new>` — версия из Confluence (обычно N+1; при нескольких правках подряд — кумулятивный diff) | основной поток | §4.2 |
+| A3 | Блочный diff `v<old>` ↔ `v<new>` и поиск цитат: блок = заголовок / абзац / пункт списка / строка таблицы; абзац из одного жирного текста = подзаголовок (`**Capacity limits**`); путь блока = заголовки + жирная метка (`Current state:`). Цитаты артефактов (строки с `[KEY · Section]`) ищутся в блоках старого снимка → `hits` у изменения, `still_in_new` | `scripts/blockdiff.mjs diff / quotes` | `CHG-xxx/changes.json` (`op`: cosmetic / modified / added / removed / moved; `hint` C0 / C1?), `CHG-xxx/quotes-before.json` |
+| A4 | Классы C1–C6 и цепочка REQ → DEC → US → AC/тесты → config → Jira → build; «Not affected» с причиной | `impact-analyst` (только чтение) | текст отчёта; `change-impact` проверяет: у каждого D-n есть класс, ID существуют, Jira-ключи из `jira-map.md` |
+| A5 | `docs/07-changes/CHG-xxx.md` (§5.4), `Status: Draft` | основной поток | — |
+| A6 | Показать BA (RU): Summary, Changes, Plan; OK построчно; предложить коммит `sync: CHG-xxx snapshot v<old>→v<new>` | основной поток | **стоп — H9** |
+| B0 | OK BA → колонка `BA OK`, `Approved by`; `approvals`: `{step: sync, status: plan-ok}` | основной поток | — |
+| B1 | Затронутые шаги → `stale`; рабочие источники изменённых страниц пересоздаются (`ingest-confluence` §3), новый ребёнок → новый ключ | основной поток | — |
+| B2 | Переделка только одобренных строк, по шагам, в scoped mode (`ba-rules` §4); C4 → новый CON → **стоп H10** | skills шагов | `Revised: CHG-xxx` / `Superseded by …`; шаг → `draft` |
+| B3 | Jira-строки одобренного плана = план `jira-sync` (scoped mode, без второго OK); ничего сверх, без удалений | `jira-sync` | `jira-map.md` § Changes from CHG-xxx |
+| B4 | `blockdiff.mjs quotes` на новом снимке → проверка трассировки | `trace-auditor` (только чтение) | находки T1–T10, вердикт |
+| B5 | `source.version/snapshot_at/children` = новые; непеределанные шаги из «Not affected» → `source_version: new`; Log в CHG; коммит `sync: CHG-xxx v<old>→v<new>` по OK BA | основной поток | — |
 
 ### 5.2 Цепочка трассировки
 
@@ -261,7 +267,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | US/EP/Q → Jira | `jira-map.md`: Backlog ID → Jira key | ID | Парсер jira-map |
 | US → build | `build-status.md`: story → status → commit | ID | Парсер build-status |
 
-`trace-index.json` — производный файл: `trace-auditor` пересобирает его из артефактов, вручную он не правится. Если цитата не находится ни в одном блоке снимка, это нарушение трассировки: оно блокирует `/ba-sync` до исправления.
+`trace-index.json` не храним (§13 I3-2): индекс «цитата → блок» каждый раз строит `blockdiff.mjs` из артефактов и снимка. Цитата, которой нет в старом снимке, попадает в `quotes-before.json`: `change-impact` показывает настоящие разрывы BA, и BA решает — сначала исправить или продолжить, записав их в CHG (§5.4 п. 6). Ложные срабатывания (текст UI, цитаты других артефактов) отмечаются, но не блокируют.
 
 ### 5.3 Классы изменений
 
@@ -287,7 +293,8 @@ MCP-сервер **не** входит в плагин: он настраива�
 | 3. Impact | `#` · изменение → REQ/NFR/… → DEC/CON → US → AC/тесты → Jira key → build status |
 | 4. Plan | `#` · действие (обновить цитату / новая версия REQ / новый CON / переписать AC / перегенерировать тест / обновить Jira) · шаг · HITL? · OK BA (да/нет/правка) |
 | 5. Not affected | Шаги и элементы, которые проверены и не меняются (явно — чтобы BA видел границу) |
-| 6. Log | Что сделано после OK, коммиты |
+| 6. Trace issues before sync | Из `quotes-before.json`: настоящий разрыв или ложное срабатывание |
+| 7. Log | Что сделано после OK, коммиты, итог `trace-auditor` |
 
 ### 5.5 Правила переделки
 
@@ -295,9 +302,9 @@ MCP-сервер **не** входит в плагин: он настраива�
 |---|---|
 | Только после OK | До OK пишутся только снимок и CHG. Ни один артефакт шагов 2–9 не меняется |
 | Только затронутое | Skill шага получает список ID (`scope: [REQ-012, US-006]`) и не трогает остальное |
-| Без перезаписи | Изменённый элемент → новый ID + `Superseded by …` (golden rule 6), а не правка на месте. Исключение: C1 (обновление цитаты + строка `Revised`) |
+| Без перезаписи | Изменённый REQ / NFR / CST / OOS / DEC / CON → новый ID + `Superseded by …` (golden rule 6), а не правка на месте. Исключение: C1 (обновление цитаты + `Revised CHG-xxx (C1)`). **Истории** (§13 I3-4): если смысл истории тот же, а поменялись значение / правило / AC — правка на месте со строкой `Revised: CHG-xxx — <что>` (тот же Jira-ключ); если история больше не верна — `Superseded by US-xxx / CHG-xxx`, Jira — метка `superseded` + комментарий |
 | Статусы | Затронутые шаги → `stale`, затем `draft`; BA снова ставит `reviewed` |
-| Jira | Только update найденных задач и create новых. `Superseded`-истории получают лейбл `superseded` и комментарий, а не удаление |
+| Jira | Только update найденных задач и create новых — ровно Jira-строки одобренного плана CHG (`jira-sync` scoped mode). `Superseded`-истории получают лейбл `superseded` и комментарий, а не удаление |
 | Build/deploy | Тесты перегенерируются по изменённым AC; код — через `/ba-continue build US-xxx`. Деплой — по общему правилу §7 |
 
 ---
@@ -306,17 +313,17 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 | Элемент | Значение |
 |---|---|
-| Файл | `.github/workflows/confluence-watch.yml` (ставит `/ba-new`) + `scripts/confluence-watch.mjs` (Node, без зависимостей) |
+| Файл | `.github/workflows/confluence-watch.yml` + `scripts/confluence-watch.mjs` (Node 22, без зависимостей); ставит `/ba-new` (в существующий проект — `/ba-sync setup-watch`), включает BA: `watch.enabled: true` + секреты. При `watch.enabled: false` скрипт ничего не проверяет |
 | Триггеры | `schedule: cron "0 5 * * 1-5"` (ежедневно в рабочие дни, 05:00 UTC) + `workflow_dispatch` |
-| Читает | `ba-project.yaml`: `atlassian.site`, `source.page_id`, `source.version`, `children[]`, `attachments[]`, `watch.issue_label` |
-| Запросы (Confluence REST v2, Basic auth email + token) | `GET /wiki/api/v2/pages/{id}` → `version.number`; `GET /wiki/api/v2/pages/{id}/descendants` (если `include_children`); `GET /wiki/api/v2/pages/{id}/attachments` (если `include_attachments`) |
+| Читает | `ba-project.yaml` через `yq -o=json` (есть на `ubuntu-latest`): `atlassian.site`, `atlassian.cloud_id`, `source.page_id`, `source.version`, `include_children`, `include_attachments`, `children[]`, `attachments[]`, `watch.*` |
+| Запросы (Confluence REST v2, Basic auth email + token) | База: `https://api.atlassian.com/ex/confluence/<cloud_id>/wiki` (scoped-токен; по умолчанию) или `https://<site>/wiki` (классический токен, переменная репозитория `CONFLUENCE_API=site`). `GET /api/v2/pages/{id}` → `version.number`, `version.message`; `GET /api/v2/pages/{id}/descendants` + `GET /api/v2/pages/{childId}` для версии (если `include_children`); `GET /api/v2/pages/{id}/attachments` (если `include_attachments`); пагинация по `_links.next` |
 | Сравнение | Версия страницы, набор детей с версиями, набор вложений с версиями — с yaml |
-| Если есть изменения | Если нет открытого issue с лейблом `ba-sync` → создать issue «Confluence page 65670 changed: v2 → v3 — run /ba-sync» (тело: таблица изменений, ссылка на страницу, version message). Если открытый есть → комментарий с новой версией |
+| Если есть изменения | Если нет открытого issue с лейблом `watch.issue_label` → создать issue «Confluence page 65670 changed: v2 → v3 — run /ba-sync» (тело: таблица изменений, ссылка на страницу, version message, скрытая метка состояния `<!-- ba-watch state: … -->`). Если открытый есть → комментарий, **только если состояние отличается** от последней метки (иначе ежедневные дубли) |
 | Если изменений нет | Ничего (лог в job summary) |
-| Секреты (GitHub Secrets) | `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN` — scoped API token только с `read:page:confluence` (+ `read:attachment:confluence`). Заводит BA сам (`gh secret set`), Claude значения не видит |
+| Секреты (GitHub Secrets) | `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN` — API token только на чтение: `read:page:confluence`, `read:hierarchical-content:confluence` (дети), `read:attachment:confluence` (вложения) — имена scope проверяются в тесте B (B7). Заводит BA сам (`! gh secret set …`), Claude значения не видит |
 | Права job | `permissions: { contents: read, issues: write }`; используется `GITHUB_TOKEN` |
 | Без ИИ | Никаких вызовов LLM и MCP. Action не пишет в репозиторий и в Confluence |
-| Ошибки | 401/403 → issue «watch: auth failed» (одно на всё время, дедупликация по лейблу `ba-watch-error`); 404 → «page not found» |
+| Ошибки | 401/403 → issue «watch: auth failed …», 404 → «watch: page not found» — одно открытое issue с лейблом `ba-watch-error` (дедупликация); job завершается успешно, сигнал — issue. Нет секретов → job падает с сообщением |
 
 ---
 
@@ -336,7 +343,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | H6 | шаг 7 | Каждая история после build (принять / вернуть); любая неоднозначность → стоп (`B-n`, при trade-off — DEC) | `build-status.md` (колонка BA) |
 | H7 | шаг 8 | **Публичная выкладка** (GitHub Pages для `static`, prod-env для `cloudflare`) — отдельное «OK, выкладываем» в этом же разговоре; ввод секретов | `run-log`, `approvals` |
 | H8 | шаг 9 | Спринт создан и запущен BA в UI Jira (K-16); план Jira (таблица) до любой записи — OK разрешает ровно эти задачи (K-15) | `jira-map.md` § Plan, `approvals` |
-| H9 | `/ba-sync` | Классы изменений и план переделки построчно | CHG `Approved by` |
+| H9 | `/ba-sync` | Классы изменений и план переделки построчно (Jira-строки плана = план `jira-sync`) | CHG `BA OK`, `Approved by`; `approvals` `{step: sync, status: plan-ok}` |
 | H10 | `/ba-sync` → C4 | Каждый новый CON из-за изменения источника | как H2 |
 
 ### 7.2 Чего Claude никогда не делает сам
@@ -374,7 +381,7 @@ MCP-сервер **не** входит в плагин: он настраива�
 | **Jira** | `KAN` | `KAN` | `KAN` (лейбл `gearloan-kit-test`) |
 | **Репозиторий** | новый **public** `hellatkacheva/deskshare-kit-test` (не DeskShare) | тот же, что A | новый public `hellatkacheva/gearloan-kit-test` |
 | **Профиль деплоя** | `static` (default) | — | `static` (default) |
-| **Шаги** | `/ba-new <url> --jira KAN` → `/ba-continue` до шага 9; в конце — реальная выкладка на GitHub Pages (H7) | после A: правки по таблице ниже → Action или `/ba-sync` | `/ba-new <url> --jira KAN` → шаги 1–6 (+ 9 по желанию) |
+| **Шаги** | `/ba-new <url> --jira KAN` → `/ba-continue` до шага 9; в конце — реальная выкладка на GitHub Pages (H7) | после A: правки по таблице §8.1 — по одной версии страницы на сценарий → `/ba-sync` (B7 — через Action) | `/ba-new <url> --jira KAN` → шаги 1–6 (+ 9 по желанию) |
 | **Ожидаемо** | Ключи источников `HO/CTX/W1–W3` выведены сами; CON по C1/C3 из W3 найдены; **CON правила архитектора (§3.2)** на шаге 6: общий лимит этажа и бронь стола между сотрудниками против `static` — кит сам поднимает CON с опциями `static`/`local`/`cloudflare` и рекомендацией, останавливается, решение BA записано как `DEC` (исход заранее не фиксирован, Q9); число REQ/CON/US сопоставимо с DeskShare (±30 %); 0 строк без цитаты; Jira: эпики + истории + вопросы, повторный `jira-sync` создаёт 0 дублей; рабочий URL на GitHub Pages | См. таблицу B | Ни одного упоминания DeskShare/BAWT3/Cloudflare вне yaml; ключи источников `HO/CTX/W1/W2` из заголовков; CON шага 3: 14 дней vs «месяцами» (Ken/Marta), бронь vs FCFS, история ≥ 1 год vs минимум данных (Lena/Priyanka), email-напоминания vs «no email»; GAP: число предметов, выходные, дата демо, повреждённые предметы; **CON правила архитектора**: «кто взял что», возврат отмечает только Ken, журнал для аудита против `static` + «Ken: no servers» → стоп, решение BA |
 | **Известное отличие** | В DeskShare был ещё `01-workshop-brief.md` из PDF (ключ `BR`). С v1.3 он есть в Confluence как дочерняя страница `458755` «Workshop brief (source copy)» у `65670` (§12 K-6), источник по-прежнему только Confluence (Q4). Если дочерняя страница не взята в ingest, темы с источником `BR` в golden считаются `n/a`. Если по CON архитектора BA выберет `static` с ограничением «одно устройство», это отмечается в отчёте как **осознанное отличие от DeskShare** (там `cloudflare`) | — | — |
 | **Метрики** | Время на шаг, число правок BA (`run-log`), совпадение с DeskShare по ключевым DEC | Precision/recall классов по таблице B, число лишне затронутых элементов = 0 | То же, что A |
@@ -382,20 +389,26 @@ MCP-сервер **не** входит в плагин: он настраива�
 
 ### 8.1 Сценарии B
 
-| # | Правка в Confluence | Ожидаемый класс | Ожидаемое влияние |
-|---|---|---|---|
-| B0 | (уже есть) v1 → v2: Source/Scope/Read-only и Date/Attendees на отдельных строках | C0 | Только снимок; 0 артефактов |
-| B1 | Опечатка / перефраз в «Current state» | C1 | Обновлены цитаты в REQ, ссылающихся на `CTX · Current state`; больше ничего |
-| B2 | W2: Floor 1 capacity 30 → 35 | C2 | REQ про ёмкость → новая версия; истории с этой ёмкостью, AC, config, тесты, Jira-описание |
-| B3 | W2 Decisions: новый пункт «Bookings can be made at most 14 days ahead» | C3 | Новый REQ; новая или изменённая история; Jira create |
-| B4 | W2: «Agreed: a waitlist is in scope for this PoC» | C4 | Новый CON против OOS / DEC «no waitlist» → HITL |
-| B5 | Удалить пункт «No mobile app …» | C5 | OOS → `Superseded by CHG`; BA решает про NFR mobile |
-| B6 | Добавить дочернюю страницу «Workshop 4 minutes» | C6 → C3 | Ingest ребёнка, новый ключ источника `W4` |
-| B7 | Action: подряд v3 → v4 без `/ba-sync` | — | Одно issue `ba-sync` + комментарий, не два issue |
+Старт: проект `deskshare-kit-test` после теста A — все шаги `reviewed`, `65670` v2, ребёнок `458755` v1, KAN-1…36. Каждая правка — **отдельная версия страницы** (одно сохранение в Confluence) и отдельный `/ba-sync` → свой CHG; следующую правку BA делает только после закрытия предыдущего CHG (коммит). Номера версий ниже — если BA сохраняет страницу ровно один раз на сценарий.
 
-Каждый B-сценарий — отдельная версия страницы и отдельный CHG. Порядок B0 → B7; перед B2 и далее — коммит-точка, чтобы откатить тестовый репо.
+**Подготовка (до B0):** (1) тег `test-b-start` в тестовом репо — точка отката; (2) в `.claude/settings.json` тестового проекта — права по K-15 (`/ba-new` уже не перезапускается, BA правит вручную или по просьбе); (3) плагин 0.4.0 перезагружен; (4) `/ba-status` показывает «Confluence = локально, v2».
 
----
+| # | Правка на странице `65670` (раздел → было → стало) | Ожидаемый класс | Что кит должен найти (Impact) | Что должно измениться после OK | Что **не** должно меняться |
+|---|---|---|---|---|---|
+| B-neg | Ничего не править, `/ba-sync` | — | «изменений нет» | ничего (ни снимка, ни CHG, `git status` чистый) | всё |
+| B0 → v3 | W2 · Booking a desk, первый пункт: выделить курсивом *no approval step* (текст не меняется) | C0 (`op: cosmetic`) | 1 изменение, 0 затронутых элементов | снимок `65670/v3`, CHG-001 (один пункт плана), `source.version: 3`, `source_version` шагов → 3 | все артефакты 01–05, Jira |
+| B1 → v4 | CTX · **Current state:** «forget to release a booking when plans change» → «forget to release a booking when **their** plans change» | C1 | цитата в REQ-014 и в §2 requirements (строка «Problem — the spreadsheet fails») больше не дословна; REQ-023, CON-005, CON-006 цитируют тот же блок, но их цитаты остались в новом тексте → Not affected | REQ-014 и строка §2: цитата обновлена на месте + `Revised CHG-002 (C1)`; `steps.requirements` stale → draft | истории, spec, код, Jira; новые ID не появляются |
+| B2 → v5 | W2 · Booking a desk: «Floor 1 (capacity 30)» → «Floor 1 (capacity **35**)» | C2 | REQ-004 (значение 30); CON-006 (цитата); истории с 30 / F1-30: US-002, US-003, US-004, US-006, US-013; `config.md` `FLOORS` (F1 desks 30); `demo-data.md`, `ui.md`, `test-plan.md`; тесты этих историй; Jira KAN-7, KAN-9, KAN-10, KAN-13, KAN-22 (описания с 30); build-status. REQ-003, REQ-005 (F2 = 25) → Not affected | новый REQ-0xx «Floor 1: 35», REQ-004 → `Superseded by REQ-0xx (CHG-003)`; истории — `Revised: CHG-003` (правила / AC 30 → 35, `Traces to` с новым REQ); `FLOORS` 35, seed; тесты сначала красные, затем зелёные (build по одной истории, приёмка BA); деплой — только по OK; Jira — update описаний ровно этих ключей | Floor 2 (25), истории без ёмкости (US-005, US-007…US-012, US-014…US-017), задачи-вопросы |
+| B3 → v6 | W2 · **Decisions:** добавить первый пункт «Bookings can be made at most 14 days ahead.» | C3 | новый блок без трассы; он отвечает на GAP-004 и закрывает ASM-010 (окно «today + 6 days»); `BOOKING_WINDOW_DAYS = 6` в `config.md`; истории с окном: US-002, US-003, US-005; Jira Q7 (KAN-29) и истории KAN-7, KAN-9, KAN-11 | новый REQ-0xx (`Proposed`, цитата из v6); ASM-010 → `Superseded by REQ-0xx (CHG-004)`; GAP-004 отвечен; `BOOKING_WINDOW_DAYS` 14; истории `Revised`; тесты; Jira: update историй, комментарий в KAN-29 + переход в Done — только если эта строка одобрена BA | остальные ASM / GAP, ёмкость, Floor 2 |
+| B4 → v7 | W2 · Capacity limits: «Agreed: no waitlist in this PoC — if a floor is full, the employee is told to pick another day or floor. Waitlisting was parked as a future-phase idea, not built now.» → «Agreed: a waitlist is in scope for this PoC — if a floor is full, the employee can join a waitlist for that day and floor.» | C4 | разворот DEC-005 «No waitlist» и OOS-006; затронуты REQ-012 (сообщение «pick another day or floor»), US-006 (правило 4 «No waitlist», сообщение о полном этаже), `ui.md`, `test-plan.md`; **правило архитектора**: лист ожидания между сотрудниками = общие данные против `static` (DEC-014) — анализ должен сказать, покрывает ли DEC-014 | **стоп H10**: новый CON-0xx (позиция A — новый текст W2, позиция B — DEC-005 / OOS-006 и профиль `static`), опции + рекомендация; дальше — только после решения BA (DEC-0xx; DEC-005, OOS-006 → `Superseded`; при «в объёме» — новый REQ, новая история US-018, Jira create; при Deferred — только DEC и вопрос спонсору) | ничего ниже шага 3 до решения BA |
+| B5 → v8 | W2 · Out of scope, explicitly confirmed: удалить пункт «No mobile app — responsive browser use is enough for the demo.» | C5 | OOS-004 «Mobile app» (единственный источник удалён); NFR-001 (одна из двух ссылок — `[W2 · Out of scope…]`, цитата пропала; `[W1 · Decisions]` осталась); US-015 (цитата); `architecture.md`, `ui.md` | OOS-004 → `Superseded by CHG-006 — removed from the source`; NFR-001 — источник и цитата заменены на оставшийся `[W1 · Decisions]` (новый ID или `Revised` — по классу, который BA утвердит); вопрос BA: удаление строки ≠ «мобильное приложение теперь в объёме» → GAP к Priya, а не новая история; US-015 — `Traces to` | код, тесты, Jira (кроме KAN-8, если его описание цитирует удалённую строку) |
+| B6 | Создать дочернюю страницу «Workshop 4 minutes» под `65670`: H2 «Decisions» с пунктом «Employees can add a short note (up to 50 characters) to a booking, e.g. "need a monitor".» | C6 → C3 | новая страница (`458755` не изменилась → `458755:1:1`); новый ключ источника `W4`; новая информация без трассы; правило архитектора — нет новой потребности в общих данных (заметка в своей брони) | снимок `confluence/<newId>/v1/`, `03-workshop-4-minutes.md`, ключ `W4` в README, `source.children` +1; новый REQ-0xx, новая история US-0xx (Draft → критик в scoped mode), test-plan, build по OK, Jira create (история в спринт) | существующие REQ / US / Jira-задачи |
+| B7 | Watch: `/ba-sync setup-watch`; BA — секреты и `watch.enabled: true`, push. Затем: правка C0 → `gh workflow run confluence-watch` → ещё правка → снова запуск → запуск без правок | — | — | 1-й запуск: одно issue «Confluence page 65670 changed: v<N> → v<N+1> — run /ba-sync» с таблицей; 2-й: комментарий в том же issue; 3-й: ничего нового («already reports this state») | второго issue нет; репозиторий и Confluence не меняются |
+| B7-err | Временно испорченный `CONFLUENCE_API_TOKEN` → запуск → вернуть токен | — | — | одно issue `ba-watch-error` «watch: auth failed …»; повторный запуск — без второго issue | — |
+
+**Метрики:** класс каждого изменения = ожидаемому (precision / recall по классам); затронутые элементы = колонке «найти» (лишние и пропущенные — отдельно); лишне изменённых файлов = 0 (`git diff --stat` после переделки ⊆ строкам плана); `trace-auditor` — «Trace intact»; Jira: 0 дублей, 0 удалений, изменены только ключи из плана; время на CHG.
+
+**Ограничение:** вложения через MCP не видны — сценарий с вложением проверяется только через Action (`include_attachments`), `/ba-sync` берёт файл из `inbox/`.
 
 ## 9. Решения BA по вопросам (2026-10-20)
 
@@ -486,3 +499,20 @@ MCP-сервер **не** входит в плагин: он настраива�
 | I2b-9 | Права шаблона проекта: `ask` дополнительно для `npx wrangler d1 migrations apply`, `gh api`, `gh workflow run`; `.gitignore` — `app/data/` (SQLite профиля `local`) | §7.3 | Публикующие команды проходят через подтверждение |
 
 Приняты BA 2026-10-22 (после реализации): метки по умолчанию (`jira.labels`, I2b-7), `node:sqlite` для профиля `local` (I2b-2), публикация `static` через Actions-workflow (I2b-5).
+
+## 13. Итерация 3 — `/ba-sync`, `change-impact`, агенты, watch (2026-10-23)
+
+Реализованы команда `/ba-sync` (+ `setup-watch`), skill `change-impact` со скриптом `scripts/blockdiff.mjs`, агенты `impact-analyst` и `trace-auditor`, шаблон Action `confluence-watch` (`.github/workflows/confluence-watch.yml` + `scripts/confluence-watch.mjs` в `skills/ba-rules/templates/project/`). Scoped mode шагов — `ba-rules` §4, режим «только снимок» — `ingest-confluence`, scoped mode Jira — `jira-sync`. Версия кита 0.4.0. Скрипт diff проверен на копии снимков теста A (не в тестовом проекте): 164 / 166 цитат найдены (2 — не цитаты источника), правки B1–B5 на копии v3 дали ожидаемые изменения и затронутые элементы (§8.1), `<br>` / переносы → `cosmetic`.
+
+| # | Решение | Было (дизайн) | Причина |
+|---|---|---|---|
+| I3-1 | `/ba-sync` без `--version N`; снимок — текущая версия из Confluence (обычно `v<N+1>`, при нескольких правках — кумулятивный CHG) | §1.2: `[--version N]` | MCP отдаёт только текущую версию (§4.2) |
+| I3-2 | `trace-index.json` не храним: связь «цитата → блок» строит детерминированный скрипт `blockdiff.mjs` (`diff` → `hits` у каждого изменения, `quotes` → цитаты, которых нет в снимке). Разрывы трассировки до sync не блокируют автоматически — BA решает, исправить или продолжить | §5.1 п. 4, §5.2: `trace-auditor` строит индекс, разрыв блокирует | Индекс устаревал бы после каждой правки артефактов; скрипт воспроизводим. В тесте A есть ложные срабатывания (текст UI в строке со ссылкой) — блок по ним остановил бы sync без причины |
+| I3-3 | Оба агента **только читают** (Read, Grep, Glob) и возвращают текст; файлы пишет основной поток после проверки (у каждого D-n класс, ID существуют, Jira-ключи из `jira-map.md`) | §1.4: Write в `docs/07-changes/` / `docs/.ba/` | Задание на итерацию 3; как у критика (B-2) — запись только там, где её видит BA |
+| I3-4 | Истории при C2 / C3 правятся на месте со строкой `Revised: CHG-xxx — <что>` (тот же Jira-ключ); `Superseded` — только для истории, которая больше не верна. REQ / NFR / CST / OOS / DEC / CON — по-прежнему новый ID + `Superseded by` | §5.5: любой изменённый элемент → новый ID | Новый ID истории ради одного числа плодил бы дубли в Jira и терял историю задачи; трасса сохраняется через `Revised` и новый REQ |
+| I3-5 | Jira-строки одобренного плана CHG = план `jira-sync` (scoped mode, без второго OK); любая Jira-запись сверх них → новый план → OK | §5.5 | Как K-15: одно одобрение на один набор записей |
+| I3-6 | `trace-auditor` запускается после переделки (фаза B4) и по просьбе BA; проверки T1–T10, включая «изменения только в одобренных строках» | §1.4: конец шагов 2–5, начало `/ba-sync`, `/ba-status` | Задание на итерацию 3; до sync трассу проверяет скрипт (`quotes-before.json`) |
+| I3-7 | Перед sync дерево git чистое (иначе коммит); снимок + CHG предлагается закоммитить до переделки (`sync: CHG-xxx snapshot …`), переделку — отдельно | — | Переделка видна как отдельный diff; проверка «ничего лишнего» по `git diff` |
+| I3-8 | Watch: `yq` раннера читает yaml; база REST — шлюз `api.atlassian.com/ex/confluence/<cloud_id>` (scoped-токен) или сайт (классический, `CONFLUENCE_API=site`); скрытая метка состояния в issue — комментарий только при новом состоянии; ошибки — одно issue `ba-watch-error`, job не падает; `watch.enabled: false` → ничего не проверяется. `/ba-new` кладёт файлы выключенными; в существующий проект — `/ba-sync setup-watch` | §6 | Ежедневные дубли комментариев; scoped-токены не работают с URL сайта; включение — решение BA (§7.2) |
+| I3-9 | Порядок тяжести классов для блока: C4 > C5 > C2 > C3 > C6 > C1 > C0; `hint: C1?` от скрипта — только кандидат (C1 лишь если не поменялись числа, даты, имена, роли, слова объёма «no / only / must / not») | §5.3: «C0 и C1 различает скрипт» | Скрипт не понимает смысл; перефраз с «no» → «a» — разворот (B4), а не редактура |
+| I3-10 | `/ba-continue` на `stale`-шаге не перезапускает шаг целиком, а отправляет в `/ba-sync` (открытый CHG и его незакрытые строки) | §1.2 | Полный перезапуск переписал бы незатронутое |

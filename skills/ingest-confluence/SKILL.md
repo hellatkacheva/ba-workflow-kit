@@ -7,6 +7,8 @@ description: BA kit step 1 — fetch the source Confluence page (and child pages
 
 Load `ba-rules` first. Read `ba-project.yaml`. MCP tools: `mcp__<atlassian.mcp_server>__…`, always with `cloudId: <atlassian.cloud_id>`. Read-only towards Confluence.
 
+**Called from `/ba-sync` (skill `change-impact`):** phase A runs §1–§2 only (snapshot of the new versions — no working sources, no README, no `ba-project.yaml`); after the BA's OK on the CHG plan, phase B runs §3 for the changed pages. §5 is then done by `change-impact`, not here.
+
 ## 1. Fetch
 | What | Call | Keep |
 |---|---|---|

@@ -39,6 +39,7 @@ Templates are in the `ba-rules` skill directory under `templates/project/`. Copy
 - `.gitignore` — create or append missing lines.
 - `.gitattributes` — create or append missing lines (snapshots under `docs/00-source/confluence/` are stored without line-ending conversion).
 - `docs/` — all READMEs, `docs/run-log.md`, `docs/00-source/inbox/.gitkeep`.
+- `.github/workflows/confluence-watch.yml`, `scripts/confluence-watch.mjs` — the weekday watch; it stays off (`watch.enabled: false`) until the BA adds the secrets and turns it on (`/ba-sync setup-watch` explains the steps).
 Never copy anything else, never write outside the project directory.
 
 ## 7. Ingest

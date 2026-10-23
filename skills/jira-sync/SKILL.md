@@ -66,3 +66,6 @@ Read the sprint field back on one story. `state: active` → the board link work
    - Done issues are not in the Backlog view: Board (column Done) or List (`https://<site>/jira/software/projects/<KEY>/list`).
    - Epics (team-managed): not on the sprint board — List view or the Timeline.
    A second run must create 0 duplicates. The BA's "reviewed" moves `steps.jira` to `reviewed` (append to `approvals`).
+
+## Scoped mode (called by `change-impact` from `/ba-sync`)
+Input: the Jira column of the approved CHG plan rows. Those rows are the approved plan (§1 is skipped — the BA approved them in the CHG): update the listed fields, create the listed issues (sprint as in `jira.sprint`), label `superseded` + comment with the replacing item. Nothing else; no deletes. Pre-checks §0 still run. Record the CHG id in `jira-map.md` (§ "Changes from CHG-xxx") and in the `approvals` note.

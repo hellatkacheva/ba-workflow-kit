@@ -20,7 +20,7 @@ Router (kit design §1.2, §12 K-2): picks the next step from `ba-project.yaml`,
     - `stories` → its review is the next step: go to `review` (the critic reviews the draft backlog; the backlog becomes `reviewed` only at the end of `review`).
     - `build` → **resume** `build`: it builds the next story if the last one is accepted by the BA, otherwise it shows what waits for acceptance and stops.
     - Otherwise it is waiting for the BA's review. Say so (artifact path, what to check, the words that move it on: "reviewed" / "OK") and **stop** — do not re-run it.
-  - If it is `stale`: say which source version made it stale and that re-running it goes through `/ba-sync` (iteration 3); stop.
+  - If it is `stale`: it is being reworked by a change report. Name the open `docs/07-changes/CHG-xxx.md` and its rows not `Done`, and say that `/ba-sync` continues the rework (only the approved rows, scoped mode); stop. Never re-run a stale step in full.
   - All steps done → say so and suggest `/ba-status`.
 
 ## 3. Check the gate (`ba-rules` §4)

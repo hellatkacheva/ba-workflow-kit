@@ -1,6 +1,6 @@
 # BA workflow kit — project settings. Created by /ba-new, see docs/design.md §3 of the kit.
 # Fields marked (BA) are changed only by the BA or on the BA's explicit OK.
-kit_version: "0.3.0"
+kit_version: "0.4.0"
 
 project:
   name: "{{PROJECT_NAME}}"            # (BA)

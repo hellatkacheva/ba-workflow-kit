@@ -10,7 +10,7 @@ Load the `ba-rules` skill first. This command is **read-only**: no file writes, 
 4. **Open items** (count with Grep, show IDs):
    - `docs/02-analysis/analysis-log.md`: CON with `Status: Open`, GAP not answered, items in "Open questions for the sponsor".
    - `docs/01-requirements/requirements.md`: rows with status `Proposed`.
-   - `docs/07-changes/CHG-*.md`: reports not `Approved`.
+   - `docs/07-changes/CHG-*.md`: reports `Draft` (waiting for the BA's OK) or `Approved — rework in progress` (plan rows not `Done`); steps `stale`.
    - Missing files that a step marked `draft` or later should have produced.
 5. **Next action.** Name exactly one: the next `/ba-continue` step and its gate, `/ba-sync` if Confluence is newer, or the BA decision that blocks progress.
 
